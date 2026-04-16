@@ -1,0 +1,59 @@
+{% extends 'base.html' %}{% block title %}Sozlamalar — Superuser{% endblock %}
+{% block extra_css %}<style>
+.al{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:start;}
+.an{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:80px;}
+.anh{padding:18px;background:linear-gradient(135deg,#e05252,#c0392b);color:#fff;}
+.anh h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:900;}
+.an a{display:flex;align-items:center;gap:9px;padding:11px 18px;color:var(--text2);text-decoration:none;font-size:.8rem;transition:all .15s;border-left:3px solid transparent;}
+.an a:hover,.an a.ac{color:var(--danger);background:rgba(224,82,82,.08);border-left-color:var(--danger);}
+.ns{padding:7px 18px 3px;font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:7px;}
+.st{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:9px;}
+</style>{% endblock %}
+{% block content %}
+<div class="al">
+  <div class="an">
+    <div class="anh"><h3><i class="fas fa-user-shield"></i> Superuser</h3></div>
+    <div class="ns">Admin</div>
+    <a href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="{% url 'admin_players' %}"><i class="fas fa-users"></i> O'yinchilar</a>
+    <a href="{% url 'admin_ratings' %}"><i class="fas fa-file-excel" style="color:#1D6F42;"></i> Excel / CSV</a>
+    <div class="ns">Superuser</div>
+    <a href="{% url 'superuser_users' %}"><i class="fas fa-user-shield"></i> Foydalanuvchilar</a>
+    <a href="{% url 'superuser_add_user' %}"><i class="fas fa-user-plus"></i> Yangi qo'shish</a>
+    <a href="{% url 'superuser_settings' %}" class="ac"><i class="fas fa-cog"></i> Sozlamalar</a>
+    <a href="/django-admin/" target="_blank"><i class="fas fa-external-link-alt"></i> Django Admin</a>
+  </div>
+  <div style="max-width:680px;">
+    <h1 style="font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;margin-bottom:22px;"><i class="fas fa-cog" style="color:var(--danger)"></i> Tizim sozlamalari</h1>
+    <div class="card" style="margin-bottom:18px;">
+      <div class="st">Platforma ma'lumotlari</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="padding:14px;background:var(--bg2);border-radius:9px;"><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Django versiyasi</div><div style="font-weight:700;margin-top:4px;">4.2</div></div>
+        <div style="padding:14px;background:var(--bg2);border-radius:9px;"><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Python</div><div style="font-weight:700;margin-top:4px;">3.11</div></div>
+        <div style="padding:14px;background:var(--bg2);border-radius:9px;"><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">Ma'lumotlar bazasi</div><div style="font-weight:700;margin-top:4px;">SQLite3</div></div>
+        <div style="padding:14px;background:var(--bg2);border-radius:9px;"><div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;">WebSocket</div><div style="font-weight:700;margin-top:4px;">Django Channels</div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:18px;">
+      <div class="st">Tezkor havolalar</div>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <a href="/django-admin/" target="_blank" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-external-link-alt"></i> Django Admin paneli</a>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-tachometer-alt"></i> Admin dashboard</a>
+        <a href="{% url 'admin_ratings' %}" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-file-excel" style="color:#1D6F42;"></i> Excel/CSV export</a>
+        <a href="{% url 'leaderboard' %}" class="btn btn-outline" style="justify-content:flex-start;"><i class="fas fa-trophy"></i> Reyting jadvali</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="st" style="color:var(--danger)"><i class="fas fa-envelope"></i> Email sozlamalari</div>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px;">settings.py faylida sozlang:</p>
+      <div style="background:var(--bg2);border-radius:9px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--success);line-height:1.8;">
+        EMAIL_HOST = 'smtp.gmail.com'<br>
+        EMAIL_PORT = 587<br>
+        EMAIL_USE_TLS = True<br>
+        EMAIL_HOST_USER = 'sizning@gmail.com'<br>
+        EMAIL_HOST_PASSWORD = 'app_password'
+      </div>
+      <div class="helptext" style="margin-top:10px;">Gmail App Password olish: Google Account → Security → 2-Step Verification → App Passwords</div>
+    </div>
+  </div>
+</div>{% endblock %}

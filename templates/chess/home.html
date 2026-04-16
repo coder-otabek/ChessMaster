@@ -1,0 +1,40 @@
+{% extends 'base.html' %}{% block title %}ChessMaster UZ{% endblock %}
+{% block extra_css %}<style>
+.hero{text-align:center;padding:80px 20px;background:radial-gradient(ellipse at center,rgba(201,168,76,.06) 0%,transparent 70%);}
+.hero h1{font-family:'Playfair Display',serif;font-size:3.5rem;font-weight:900;background:linear-gradient(135deg,var(--accent),#e8c05a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px;}
+.hero p{color:var(--muted);font-size:1rem;max-width:500px;margin:0 auto 32px;}
+.hbtns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+.feat{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:60px 0;}
+.fc{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center;}
+.fi{font-size:2.4rem;margin-bottom:14px;}
+.ft{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;margin-bottom:8px;}
+.fd{color:var(--muted);font-size:.82rem;line-height:1.6;}
+@media(max-width:768px){.feat{grid-template-columns:1fr;}}
+</style>{% endblock %}
+{% block content %}
+<div class="hero">
+  <div style="font-size:5rem;margin-bottom:16px;">♛</div>
+  <h1>ChessMaster UZ</h1>
+  <p>O'zbek shaxmat platformasi — reyting bo'yicha o'ynang, ustaling va top1 bo'ling!</p>
+  <div class="hbtns">
+    <a href="{% url 'register' %}" class="btn btn-primary" style="padding:14px 28px;font-size:.95rem;"><i class="fas fa-user-plus"></i> Ro'yxatdan o'ting</a>
+    <a href="{% url 'leaderboard' %}" class="btn btn-outline" style="padding:14px 28px;font-size:.95rem;"><i class="fas fa-trophy"></i> Reytingni ko'ring</a>
+  </div>
+</div>
+<div class="feat">
+  <div class="fc"><div class="fi">⚡</div><div class="ft">Avtomatik Matchmaking</div><div class="fd">Tizim sizga reytingingizga mos raqibni avtomatik topadi</div></div>
+  <div class="fc"><div class="fi">🏆</div><div class="ft">ELO Reyting tizimi</div><div class="fd">Har o'yindan so'ng reytingingiz yangilanadi va o'rin ko'tariladi</div></div>
+  <div class="fc"><div class="fi">💬</div><div class="ft">O'yinchi Chat</div><div class="fd">Raqiblar va do'stlaringiz bilan to'g'ridan-to'g'ri muloqot</div></div>
+</div>
+{% if top_players %}
+<div class="card"><h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:18px;"><i class="fas fa-trophy" style="color:var(--accent)"></i> Top 5 O'yinchilar</h3>
+<table><thead><tr><th>#</th><th>O'yinchi</th><th>Reyting</th><th>O'yinlar</th></tr></thead><tbody>
+{% for p in top_players %}
+<tr><td>{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}{{ forloop.counter }}{% endif %}</td>
+<td><div style="display:flex;align-items:center;gap:9px;"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;">{{ p.user.username|first|upper }}</div><a href="{% url 'profile' p.user.username %}" style="color:var(--text);text-decoration:none;font-weight:600;">{{ p.user.username }}</a></div></td>
+<td><span style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--accent);">{{ p.rating }}</span></td>
+<td style="color:var(--muted)">{{ p.games_played }}</td></tr>
+{% endfor %}
+</tbody></table></div>
+{% endif %}
+{% endblock %}

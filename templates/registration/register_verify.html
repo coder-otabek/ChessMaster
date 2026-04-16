@@ -1,0 +1,109 @@
+{% extends 'base.html' %}{% block title %}Email tasdiqlash{% endblock %}
+{% block extra_css %}<style>
+.aw{min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;}
+.ab{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:44px 38px;box-shadow:var(--shadow);}
+.at{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;margin-bottom:8px;text-align:center;}
+.as{color:var(--muted);font-size:.8rem;margin-bottom:30px;text-align:center;line-height:1.6;}
+.otp{display:flex;gap:10px;justify-content:center;margin-bottom:26px;}
+.otp input{width:50px;height:58px;text-align:center;font-size:1.4rem;font-weight:700;background:var(--bg2);border:2px solid var(--border);border-radius:11px;color:var(--text);font-family:'Playfair Display',serif;transition:border-color .2s,box-shadow .2s;outline:none;}
+.otp input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--aglow);}
+.rs{text-align:center;font-size:.78rem;color:var(--muted);margin-top:14px;}
+.rs a{color:var(--accent);cursor:pointer;}
+.tm{color:var(--accent);font-weight:600;}
+#resend-msg{text-align:center;font-size:.78rem;margin-top:8px;min-height:18px;}
+</style>{% endblock %}
+{% block content %}
+<div class="aw"><div class="ab">
+  <div style="font-size:2.8rem;text-align:center;margin-bottom:16px;">📧</div>
+  <div class="at">Email tasdiqlash</div>
+  <div class="as">
+    <strong style="color:var(--text)">{{ email }}</strong><br>
+    manziliga 6 raqamli kod yuborildi.<br>
+    Kodni kiriting va ro'yxatdan o'tishni tasdiqlang.
+  </div>
+  <form method="post" novalidate>{% csrf_token %}
+    <div class="otp">
+      <input type="text" maxlength="1" class="od" inputmode="numeric" autofocus>
+      <input type="text" maxlength="1" class="od" inputmode="numeric">
+      <input type="text" maxlength="1" class="od" inputmode="numeric">
+      <input type="text" maxlength="1" class="od" inputmode="numeric">
+      <input type="text" maxlength="1" class="od" inputmode="numeric">
+      <input type="text" maxlength="1" class="od" inputmode="numeric">
+    </div>
+    <input type="hidden" name="otp" id="otpval">
+    {% if form.otp.errors %}
+      <ul class="errorlist" style="text-align:center;margin-bottom:12px">
+        {% for e in form.otp.errors %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;">
+      <i class="fas fa-check"></i> Tasdiqlash
+    </button>
+  </form>
+  <div class="rs">Kod kelmadimi? <a id="resend-btn" onclick="resend()">Qayta yuborish</a> <span class="tm" id="tm">(2:00)</span></div>
+  <div id="resend-msg"></div>
+  <div style="text-align:center;margin-top:16px;font-size:.78rem;">
+    <a href="{% url 'register' %}" style="color:var(--muted);">← Ro'yxatga qaytish</a>
+  </div>
+</div></div>
+{% endblock %}
+{% block extra_js %}<script>
+const ds = document.querySelectorAll('.od');
+ds.forEach((d, i) => {
+  d.addEventListener('input', e => { if (e.target.value && i < ds.length-1) ds[i+1].focus(); upd(); });
+  d.addEventListener('keydown', e => { if (e.key==='Backspace' && !e.target.value && i>0) ds[i-1].focus(); });
+  d.addEventListener('paste', e => {
+    e.preventDefault();
+    const txt = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+    [...txt].forEach((ch, j) => { if (ds[j]) ds[j].value = ch; });
+    if (ds[Math.min(txt.length, 5)]) ds[Math.min(txt.length, 5)].focus();
+    upd();
+  });
+});
+function upd() { document.getElementById('otpval').value = [...ds].map(d => d.value).join(''); }
+
+let sec = 120;
+const ti = document.getElementById('tm');
+const msgEl = document.getElementById('resend-msg');
+const iv = setInterval(() => {
+  sec--;
+  const m = Math.floor(sec/60), s = sec%60;
+  ti.textContent = `(${m}:${s.toString().padStart(2,'0')})`;
+  if (sec <= 0) { clearInterval(iv); ti.textContent = ''; }
+}, 1000);
+
+function resend() {
+  if (sec > 0) return;
+  const btn = document.getElementById('resend-btn');
+  btn.style.pointerEvents = 'none';
+  msgEl.style.color = 'var(--muted)';
+  msgEl.textContent = 'Yuborilmoqda...';
+  fetch('{% url "register_resend" %}', {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'}
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      msgEl.style.color = 'var(--success, #4caf50)';
+      msgEl.textContent = '✓ Yangi kod yuborildi!';
+      sec = 120;
+      let nv = setInterval(() => {
+        sec--;
+        const m = Math.floor(sec/60), s = sec%60;
+        ti.textContent = `(${m}:${s.toString().padStart(2,'0')})`;
+        if (sec <= 0) { clearInterval(nv); ti.textContent = ''; }
+      }, 1000);
+    } else {
+      msgEl.style.color = 'var(--danger, #f44336)';
+      msgEl.textContent = 'Xato: ' + (d.error || 'Noma\'lum xato');
+    }
+    btn.style.pointerEvents = '';
+  })
+  .catch(() => {
+    msgEl.style.color = 'var(--danger, #f44336)';
+    msgEl.textContent = 'Tarmoq xatosi. Qayta urinib ko\'ring.';
+    btn.style.pointerEvents = '';
+  });
+}
+</script>{% endblock %}

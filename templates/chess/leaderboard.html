@@ -1,0 +1,73 @@
+{% extends 'base.html' %}{% block title %}Reyting Jadvali{% endblock %}
+{% block extra_css %}<style>
+.lhdr{text-align:center;margin-bottom:36px;}
+.lhdr h1{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,var(--accent),#e8c05a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.top3{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:14px;margin-bottom:36px;align-items:end;}
+.t3c{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 16px;text-align:center;transition:transform .2s;position:relative;overflow:hidden;}
+.t3c:hover{transform:translateY(-4px);}
+.t3c.f{border-color:#FFD700;box-shadow:0 0 28px rgba(255,215,0,.12);}
+.t3c.s{border-color:#C0C0C0;}
+.t3c.t{border-color:#CD7F32;}
+.t3r{font-family:'Playfair Display',serif;font-size:2.4rem;font-weight:900;margin-bottom:10px;}
+.t3c.f .t3r{color:#FFD700;}.t3c.s .t3r{color:#C0C0C0;}.t3c.t .t3r{color:#CD7F32;}
+.t3n{font-weight:700;font-size:.88rem;margin-top:8px;}
+.t3rt{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent);font-weight:900;}
+.t3m{font-size:.7rem;color:var(--muted);margin-top:4px;}
+.sbar{display:flex;gap:10px;margin-bottom:18px;}
+.sbar input{flex:1;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:.83rem;outline:none;}
+.sbar input:focus{border-color:var(--accent);}
+.my-row td{background:var(--aglow) !important;}
+@media(max-width:600px){.top3{grid-template-columns:1fr;}}
+</style>{% endblock %}
+{% block content %}
+<div class="lhdr">
+  <h1>🏆 Reyting Jadvali</h1>
+  <p style="color:var(--muted);margin-top:8px;font-size:.83rem;">{{ total_players }} ta o'yinchi</p>
+</div>
+{% if top3 %}
+<div class="top3">
+  {% if top3|length >= 2 %}
+  <div class="t3c s">
+    <div class="t3r">🥈</div>
+    <div class="avatar" style="margin:0 auto;">{{ top3.1.user.username|first|upper }}</div>
+    <div class="t3n"><a href="{% url 'profile' top3.1.user.username %}" style="color:var(--text);text-decoration:none;">{{ top3.1.user.username }}</a></div>
+    <div class="t3rt">{{ top3.1.rating }}</div><div class="t3m">{{ top3.1.games_played }} o'yin</div>
+  </div>
+  {% endif %}
+  <div class="t3c f">
+    <div class="t3r">♛</div>
+    <div class="avatar" style="margin:0 auto;width:56px;height:56px;font-size:1.4rem;">{{ top3.0.user.username|first|upper }}</div>
+    <div class="t3n" style="font-size:1rem;"><a href="{% url 'profile' top3.0.user.username %}" style="color:var(--text);text-decoration:none;">{{ top3.0.user.username }}</a></div>
+    <div class="t3rt" style="font-size:1.9rem;">{{ top3.0.rating }}</div><div class="t3m">{{ top3.0.games_played }} o'yin · {{ top3.0.wins }}W</div>
+  </div>
+  {% if top3|length >= 3 %}
+  <div class="t3c t">
+    <div class="t3r">🥉</div>
+    <div class="avatar" style="margin:0 auto;">{{ top3.2.user.username|first|upper }}</div>
+    <div class="t3n"><a href="{% url 'profile' top3.2.user.username %}" style="color:var(--text);text-decoration:none;">{{ top3.2.user.username }}</a></div>
+    <div class="t3rt">{{ top3.2.rating }}</div><div class="t3m">{{ top3.2.games_played }} o'yin</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+<div class="card">
+  <div class="sbar"><input type="text" id="si" placeholder="🔍 O'yinchi qidirish..." oninput="flt()"></div>
+  <table id="lt">
+    <thead><tr><th>#</th><th>O'yinchi</th><th>Reyting</th><th>O'yinlar</th><th>G'alaba</th><th>Win%</th><th></th></tr></thead>
+    <tbody>
+    {% for p in players %}
+    <tr {% if request.user.is_authenticated and p.user == request.user %}class="my-row"{% endif %} data-n="{{ p.user.username|lower }}">
+      <td>{% if forloop.counter == 1 %}<span style="color:#FFD700">🥇</span>{% elif forloop.counter == 2 %}<span style="color:#C0C0C0">🥈</span>{% elif forloop.counter == 3 %}<span style="color:#CD7F32">🥉</span>{% else %}<span style="color:var(--muted)">{{ forloop.counter }}</span>{% endif %}</td>
+      <td><div style="display:flex;align-items:center;gap:10px;"><div class="avatar" style="width:32px;height:32px;font-size:.78rem;">{{ p.user.username|first|upper }}</div><div><a href="{% url 'profile' p.user.username %}" style="color:var(--text);text-decoration:none;font-weight:600;">{{ p.user.username }}</a>{% if request.user.is_authenticated and p.user == request.user %} <span style="color:var(--accent);font-size:.7rem;">(siz)</span>{% endif %}<div style="font-size:.7rem;color:var(--muted);">{{ p.title }}</div></div></div></td>
+      <td><span style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--accent);">{{ p.rating }}</span></td>
+      <td style="color:var(--muted)">{{ p.games_played }}</td>
+      <td style="color:var(--success)">{{ p.wins }}</td>
+      <td>{% if p.games_played %}<div style="display:flex;align-items:center;gap:7px;"><div style="flex:1;height:4px;background:var(--border);border-radius:2px;min-width:40px;overflow:hidden;"><div style="height:100%;background:var(--success);border-radius:2px;width:{{ p.win_rate|floatformat:0 }}%;"></div></div><span style="font-size:.75rem;color:var(--muted)">{{ p.win_rate|floatformat:1 }}%</span></div>{% else %}—{% endif %}</td>
+      <td>{% if request.user.is_authenticated and p.user != request.user %}<button class="btn btn-primary btn-sm" onclick="openChallengeModal('{{ p.user.username }}')"><i class="fas fa-chess"></i> Musobaqa</button>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block extra_js %}<script>function flt(){const q=document.getElementById('si').value.toLowerCase();document.querySelectorAll('#lt tbody tr').forEach(r=>r.style.display=r.dataset.n.includes(q)?'':' none');}</script>{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}{% block title %}Foydalanuvchilar — Superuser{% endblock %}
+{% block extra_css %}<style>
+.al{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:start;}
+.an{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:80px;}
+.anh{padding:18px;background:linear-gradient(135deg,#e05252,#c0392b);color:#fff;}
+.anh h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:900;}
+.an a{display:flex;align-items:center;gap:9px;padding:11px 18px;color:var(--text2);text-decoration:none;font-size:.8rem;transition:all .15s;border-left:3px solid transparent;}
+.an a:hover,.an a.ac{color:var(--danger);background:rgba(224,82,82,.08);border-left-color:var(--danger);}
+.ns{padding:7px 18px 3px;font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:7px;}
+.br{padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700;}
+.ba{background:var(--aglow);color:var(--accent);border:1px solid var(--accent);}
+.bsu{background:rgba(224,82,82,.12);color:var(--danger);border:1px solid var(--danger);}
+.bu{background:rgba(136,136,170,.12);color:var(--muted);}
+.flt{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.flt input,.flt select{padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.8rem;outline:none;}
+.xl-btn{background:linear-gradient(135deg,#1D6F42,#2e9c5f);color:#fff;border:none;display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .25s;text-decoration:none;text-transform:uppercase;letter-spacing:.5px;}
+.xl-btn:hover{transform:translateY(-2px);box-shadow:0 5px 16px rgba(29,111,66,.35);}
+.csv-btn{background:transparent;color:var(--success);border:1px solid var(--success);display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;text-decoration:none;text-transform:uppercase;letter-spacing:.5px;transition:all .2s;}
+.csv-btn:hover{background:rgba(82,192,120,.1);}
+</style>{% endblock %}
+{% block content %}
+<div class="al">
+  <div class="an">
+    <div class="anh"><h3><i class="fas fa-user-shield"></i> Superuser</h3><div style="font-size:.72rem;opacity:.8;">{{ request.user.username }}</div></div>
+    <div class="ns">Admin</div>
+    <a href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="{% url 'admin_players' %}"><i class="fas fa-users"></i> O'yinchilar</a>
+    <a href="{% url 'admin_games' %}"><i class="fas fa-chess-board"></i> O'yinlar</a>
+    <a href="{% url 'admin_live_games' %}"><i class="fas fa-circle" style="color:var(--danger);font-size:.5rem;vertical-align:middle;"></i> Jonli o'yinlar</a>
+    <a href="{% url 'admin_ratings' %}"><i class="fas fa-file-excel" style="color:#1D6F42;"></i> Excel / CSV</a>
+    <div class="ns">Superuser</div>
+    <a href="{% url 'superuser_users' %}" class="ac"><i class="fas fa-user-shield"></i> Foydalanuvchilar</a>
+    <a href="{% url 'superuser_add_user' %}"><i class="fas fa-user-plus"></i> Yangi qo'shish</a>
+    <a href="{% url 'superuser_settings' %}"><i class="fas fa-cog"></i> Sozlamalar</a>
+    <a href="/django-admin/" target="_blank"><i class="fas fa-external-link-alt"></i> Django Admin</a>
+  </div>
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <h1 style="font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;"><i class="fas fa-users" style="color:var(--danger)"></i> Barcha foydalanuvchilar</h1>
+      <div style="display:flex;gap:8px;">
+        <form method="post" action="{% url 'admin_export_excel' %}">{% csrf_token %}<input type="hidden" name="sheets" value="main,top10,stats,admin"><input type="hidden" name="limit" value="all"><input type="hidden" name="status_filter" value="all"><input type="hidden" name="rating_filter" value="all"><button type="submit" class="xl-btn"><i class="fas fa-file-excel"></i> Excel</button></form>
+        <a href="{% url 'admin_export_csv' %}" class="csv-btn"><i class="fas fa-file-csv"></i> CSV</a>
+        <a href="{% url 'superuser_add_user' %}" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i> Qo'shish</a>
+      </div>
+    </div>
+    <div class="card">
+      <form method="get" class="flt">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="🔍 Ism, email, username...">
+        <select name="role"><option value="">Barcha rollar</option><option value="superuser" {% if request.GET.role == 'superuser' %}selected{% endif %}>Superuser</option><option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option><option value="user" {% if request.GET.role == 'user' %}selected{% endif %}>O'yinchi</option></select>
+        <select name="status"><option value="">Barcha holat</option><option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Aktiv</option><option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Bloklangan</option></select>
+        <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+        {% if request.GET %}<a href="{% url 'superuser_users' %}" class="btn btn-outline btn-sm">Tozala</a>{% endif %}
+      </form>
+      <table><thead><tr><th>#</th><th>Foydalanuvchi</th><th>Reyting</th><th>Rol</th><th>So'nggi kirish</th><th>Holat</th><th>Amallar</th></tr></thead><tbody>
+      {% for u in users %}
+      <tr>
+        <td style="color:var(--muted)">{{ forloop.counter }}</td>
+        <td><div style="display:flex;align-items:center;gap:9px;"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;">{{ u.username|first|upper }}</div><div><div style="font-weight:600;font-size:.83rem;">{{ u.username }}</div><div style="font-size:.7rem;color:var(--muted);">{{ u.email }}</div>{% if u.get_full_name %}<div style="font-size:.7rem;color:var(--muted);">{{ u.get_full_name }}</div>{% endif %}</div></div></td>
+        <td><span style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--accent);">{{ u.profile.rating }}</span></td>
+        <td>{% if u.is_superuser %}<span class="br bsu">👑 Superuser</span>{% elif u.is_staff %}<span class="br ba">🛡 Admin</span>{% else %}<span class="br bu">♟ O'yinchi</span>{% endif %}</td>
+        <td style="color:var(--muted);font-size:.78rem;">{% if u.last_login %}{{ u.last_login|date:"d.m.y H:i" }}{% else %}Hech qachon{% endif %}</td>
+        <td>{% if u.is_active %}<span style="color:var(--success);font-size:.78rem;">● Aktiv</span>{% else %}<span style="color:var(--danger);font-size:.78rem;">● Blok</span>{% endif %}</td>
+        <td><div style="display:flex;gap:4px;">
+          <a href="{% url 'admin_edit_player' u.id %}" class="btn btn-outline btn-sm"><i class="fas fa-pen"></i></a>
+          <a href="{% url 'admin_reset_player_password' u.id %}" class="btn btn-outline btn-sm"><i class="fas fa-key"></i></a>
+          {% if u != request.user and not u.is_superuser %}
+          <form method="post" action="{% url 'admin_toggle_active' u.id %}">{% csrf_token %}<button type="submit" class="btn {% if u.is_active %}btn-danger{% else %}btn-success{% endif %} btn-sm" onclick="return confirm('Holatni o\'zgartirish?')"><i class="fas {% if u.is_active %}fa-ban{% else %}fa-check{% endif %}"></i></button></form>
+          <form method="post" action="{% url 'superuser_delete_user' u.id %}">{% csrf_token %}<button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('O\'chirishni tasdiqlaysizmi?')"><i class="fas fa-trash"></i></button></form>
+          {% endif %}
+        </div></td>
+      </tr>
+      {% endfor %}
+      </tbody></table>
+      {% if users.has_other_pages %}
+      <div style="display:flex;gap:5px;justify-content:center;margin-top:16px;">{% if users.has_previous %}<a href="?page={{ users.previous_page_number }}&q={{ request.GET.q }}&role={{ request.GET.role }}&status={{ request.GET.status }}" class="btn btn-outline btn-sm">◀</a>{% endif %}<span class="btn btn-outline btn-sm">{{ users.number }}/{{ users.paginator.num_pages }}</span>{% if users.has_next %}<a href="?page={{ users.next_page_number }}&q={{ request.GET.q }}&role={{ request.GET.role }}&status={{ request.GET.status }}" class="btn btn-outline btn-sm">▶</a>{% endif %}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>{% endblock %}

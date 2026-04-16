@@ -1,0 +1,551 @@
+{% extends 'base.html' %}{% block title %}O'yin #{{ game.id }}{% endblock %}
+{% block extra_css %}<style>
+.gl{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;}
+@media(max-width:900px){.gl{grid-template-columns:1fr;}}
+.pbr{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 16px;margin-bottom:8px;}
+.pbr.act{border-color:var(--accent);box-shadow:0 0 0 2px var(--aglow);}
+.pi{display:flex;align-items:center;gap:11px;}
+.pn{font-weight:700;font-size:.88rem;}
+.pr{color:var(--accent);font-size:.75rem;}
+.clk{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:900;padding:7px 14px;border-radius:8px;background:var(--bg2);min-width:76px;text-align:center;}
+.clk.warn{color:var(--danger);animation:pl 1s infinite;}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.4}}
+.board-wrap{width:100%;max-width:min(560px,100vw - 28px);margin:0 auto;}
+#board{width:100%;aspect-ratio:1/1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border:3px solid var(--border);border-radius:4px;overflow:hidden;box-shadow:var(--shadow);user-select:none;}
+.sq{display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:filter .12s;}
+.sq.lt{background:#f0d9b5;}
+.sq.dk{background:#b58863;}
+.sq:hover{filter:brightness(1.1);}
+.sq.sel{background:rgba(255,213,0,.78)!important;}
+.sq.lm{background:rgba(170,130,0,.40)!important;}
+.sq.chk{background:rgba(220,50,50,.62)!important;}
+.sq.pm::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,0,0,.20);pointer-events:none;z-index:1;}
+.sq.pc{box-shadow:inset 0 0 0 5px rgba(0,0,0,.28);}
+.sq .piece{font-size:clamp(18px,5.5vw,50px);line-height:1;display:block;position:relative;z-index:2;}
+.sq .piece.wp{color:#fff;text-shadow:0 0 3px rgba(0,0,0,1),1px 1px 2px rgba(0,0,0,.9),-1px -1px 2px rgba(0,0,0,.9);}
+.sq .piece.bp{color:#1a1a1a;text-shadow:0 0 2px rgba(255,255,255,.3);}
+.co{position:absolute;font-size:.5rem;font-weight:700;font-family:'JetBrains Mono',monospace;z-index:3;line-height:1;}
+.sq.lt .co{color:#b58863;}.sq.dk .co{color:#f0d9b5;}
+.co.r{top:2px;left:3px;}.co.f{bottom:2px;right:3px;}
+.ml{height:200px;overflow-y:auto;background:var(--bg2);border-radius:9px;padding:10px;font-size:.8rem;}
+.mp{display:grid;grid-template-columns:26px 1fr 1fr;gap:3px;padding:2px 0;}
+.mn{color:var(--muted);}
+.ms{padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.75rem;}
+.gc{display:flex;gap:7px;margin-top:10px;}
+.gc button{flex:1;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:.9rem;transition:all .15s;}
+.gc button:hover{border-color:var(--accent);color:var(--accent);}
+.gchat{height:130px;overflow-y:auto;margin-bottom:10px;font-size:.78rem;display:flex;flex-direction:column;gap:5px;}
+.mb{padding:7px 12px;border-radius:14px;display:inline-block;max-width:85%;word-break:break-word;}
+.mo .mb{background:var(--accent);color:#000;float:right;clear:both;}
+.mth .mb{background:var(--bg2);color:var(--text);float:left;clear:both;}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:2000;align-items:center;justify-content:center;}
+.ov.sh{display:flex;}
+.ovb{background:var(--card);border:1px solid var(--accent);border-radius:18px;padding:44px;text-align:center;box-shadow:0 0 60px var(--aglow);max-width:90vw;}
+.ovt{font-family:'Playfair Display',serif;font-size:2.3rem;font-weight:900;}
+.promo-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:3000;align-items:center;justify-content:center;}
+.promo-overlay.sh{display:flex;}
+.promo-box{background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:24px;text-align:center;}
+.promo-box h3{font-family:'Playfair Display',serif;margin-bottom:16px;}
+.promo-opts{display:flex;gap:12px;justify-content:center;}
+.promo-opt{font-size:2.8rem;cursor:pointer;padding:10px;border-radius:9px;border:2px solid var(--border);transition:all .15s;background:var(--bg2);}
+.promo-opt:hover{border-color:var(--accent);transform:scale(1.1);}
+@media(max-width:600px){.board-wrap{max-width:100vw;padding:0;}#board{border-width:2px;}.clk{font-size:1.1rem;padding:5px 10px;}}
+</style>{% endblock %}
+
+{% block content %}
+<div class="gl">
+  <div>
+    <div class="pbr" id="topbar">
+      <div class="pi">
+        <div class="avatar" id="top-avatar"></div>
+        <div><div class="pn" id="top-name"></div><div class="pr" id="top-color"></div></div>
+      </div>
+      <div class="clk" id="topclk">—</div>
+    </div>
+    <div class="board-wrap"><div id="board"></div></div>
+    <div class="pbr" id="botbar" style="margin-top:8px;">
+      <div class="pi">
+        <div class="avatar" id="bot-avatar"></div>
+        <div><div class="pn" id="bot-name"></div><div class="pr" id="bot-color"></div></div>
+      </div>
+      <div class="clk" id="botclk">—</div>
+    </div>
+    {% if game.status == 'active' and not watch_mode %}
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+      <form method="post" action="{% url 'game_resign' game.id %}">{% csrf_token %}
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Taslim bo\'lasizmi?')"><i class="fas fa-flag"></i> Taslim</button>
+      </form>
+      <button class="btn btn-outline" onclick="offerDraw()"><i class="fas fa-handshake"></i> Durang</button>
+      <button class="btn btn-outline" onclick="showAbandonModal('/play/')" style="color:var(--muted);"><i class="fas fa-door-open"></i> Chiqish</button>
+    </div>
+    {% endif %}
+  </div>
+  <div>
+    <div class="card" style="margin-bottom:14px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:.95rem;margin-bottom:12px;color:var(--accent);"><i class="fas fa-list"></i> Harakatlar</h3>
+      <div class="ml" id="ml"></div>
+      <div class="gc">
+        <button onclick="goM(-9999)">⏮</button><button onclick="goM(-1)">◀</button>
+        <button onclick="goM(1)">▶</button><button onclick="goM(9999)">⏭</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:.95rem;margin-bottom:12px;color:var(--accent);"><i class="fas fa-info-circle"></i> Ma'lumot</h3>
+      <div style="font-size:.78rem;display:flex;flex-direction:column;gap:7px;">
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted)">O'yin</span><span>#{{ game.id }}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted)">Vaqt</span><span>{{ game.time_control }}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted)">Holat</span>
+          <span style="color:{% if game.status == 'active' %}var(--success){% else %}var(--muted){% endif %}">
+            {% if game.status == 'active' %}Aktiv{% elif game.status == 'white_wins' %}Oq g'alaba{% elif game.status == 'black_wins' %}Qora g'alaba{% elif game.status == 'draw' %}Durang{% else %}{{ game.status }}{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-family:'Playfair Display',serif;font-size:.95rem;margin-bottom:10px;color:var(--accent);"><i class="fas fa-comment"></i> Chat</h3>
+      <div class="gchat" id="gchat"></div>
+      <div style="display:flex;gap:7px;">
+        <input type="text" id="ci" placeholder="Xabar..." style="flex:1;padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.8rem;outline:none;" onkeydown="if(event.key==='Enter')sndC()">
+        <button onclick="sndC()" style="padding:8px 13px;background:var(--accent);border:none;border-radius:8px;cursor:pointer;color:#000;font-weight:700;">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Game over overlay -->
+<div class="ov" id="ov">
+  <div class="ovb">
+    <div style="font-size:3.5rem;margin-bottom:14px;" id="ovem">🏆</div>
+    <div class="ovt" id="ovt">G'alaba!</div>
+    <div style="color:var(--muted);margin:10px 0 24px;font-size:.9rem;" id="ovsub"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <a href="{% url 'find_opponent' %}" class="btn btn-primary"><i class="fas fa-chess"></i> Yangi o'yin</a>
+      <a href="{% url 'leaderboard' %}" class="btn btn-outline">Reyting</a>
+    </div>
+  </div>
+</div>
+
+<!-- Pawn promotion -->
+<div class="promo-overlay" id="promoOv">
+  <div class="promo-box">
+    <h3>Piyodani aylantiring</h3>
+    <div class="promo-opts" id="promoOpts"></div>
+  </div>
+</div>
+
+<!-- Abandon warning -->
+<div class="ov" id="abandonModal">
+  <div class="ovb">
+    <div style="font-size:3rem;margin-bottom:12px;">⚠️</div>
+    <div class="ovt" style="font-size:1.7rem;color:var(--danger);">O'yinni tark etasizmi?</div>
+    <div style="color:var(--muted);margin:12px 0 24px;font-size:.88rem;line-height:1.6;">
+      O'yindan chiqsangiz <strong style="color:var(--danger)">yutqazgan</strong> hisoblanasiz<br>va reytingingiz kamayadi.
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-danger" onclick="confirmAbandon()"><i class="fas fa-sign-out-alt"></i> Ha, chiqaman</button>
+      <button class="btn btn-primary" onclick="cancelAbandon()"><i class="fas fa-chess"></i> O'yinda qolaman</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script>
+// ── Constants ────────────────────────────────────────────────────────────
+const GID    = {{ game.id }};
+const ME     = "{{ request.user.username }}";
+const W_USER = "{{ game.white_player.username }}";
+const B_USER = "{{ game.black_player.username }}";
+const W_RAT  = {{ game.white_player.profile.rating }};
+const B_RAT  = {{ game.black_player.profile.rating }};
+const ACTIVE = "{{ game.status }}" === "active";
+const WATCH  = {{ watch_mode|yesno:"true,false" }};
+
+// Perspektiva: oq o'yinchi oq toshlarni pastda ko'radi, qora — qora toshlarni
+const IS_W   = W_USER === ME;
+const VIEW_W = WATCH ? true : IS_W;
+
+const PIECES = {
+  wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',
+  bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'
+};
+
+// ── Game state ───────────────────────────────────────────────────────────
+let gs = {
+  board: {{ game.board_state|safe }},
+  turn:  '{{ game.current_turn }}',
+  sel:   null, lmMap: {}, moves: {{ game.moves|safe }},
+  lmf: null, lmt: null, checkSq: '',
+};
+let wt = {{ game.white_time_remaining }};
+let bt = {{ game.black_time_remaining }};
+let civ = null;
+let pendingPromo = null;
+let gameEnded = false;
+let pendingNavUrl = null;
+
+// ── Player bars ──────────────────────────────────────────────────────────
+function setupBars() {
+  const topUser   = VIEW_W ? B_USER : W_USER;
+  const botUser   = VIEW_W ? W_USER : B_USER;
+  const topRat    = VIEW_W ? B_RAT  : W_RAT;
+  const botRat    = VIEW_W ? W_RAT  : B_RAT;
+  const topSymbol = VIEW_W ? '♟ Qora' : '♙ Oq';
+  const botSymbol = VIEW_W ? '♙ Oq'   : '♟ Qora';
+
+  const W_AV = '{% if game.white_player.profile.avatar %}{{ game.white_player.profile.avatar.url }}{% endif %}';
+  const B_AV = '{% if game.black_player.profile.avatar %}{{ game.black_player.profile.avatar.url }}{% endif %}';
+  const topAvUrl = topUser === W_USER ? W_AV : B_AV;
+  const topAv = document.getElementById('top-avatar');
+  if (topAvUrl) { topAv.innerHTML = '<img src="'+topAvUrl+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'; } else { topAv.textContent = topUser[0].toUpperCase(); }
+  document.getElementById('top-name').innerHTML =
+    `<a href="/accounts/profile/${topUser}/" style="color:var(--text);text-decoration:none;">${topUser}</a>`;
+  document.getElementById('top-color').textContent = `${topSymbol} · ${topRat}`;
+
+  const botAvUrl = botUser === W_USER ? W_AV : B_AV;
+  const botAv = document.getElementById('bot-avatar');
+  if (botAvUrl) { botAv.innerHTML = '<img src="'+botAvUrl+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'; } else { botAv.textContent = botUser[0].toUpperCase(); }
+  document.getElementById('bot-name').innerHTML =
+    `<a href="/accounts/profile/${botUser}/" style="color:var(--text);text-decoration:none;">${botUser}</a>`;
+  document.getElementById('bot-color').textContent = `${botSymbol} · ${botRat}`;
+  updBars();
+}
+
+function updBars() {
+  const topColor = VIEW_W ? 'b' : 'w';
+  document.getElementById('topbar').classList.toggle('act', gs.turn === topColor && ACTIVE);
+  document.getElementById('botbar').classList.toggle('act', gs.turn !== topColor && ACTIVE);
+  document.getElementById('topclk').textContent = fmtC(VIEW_W ? bt : wt);
+  document.getElementById('botclk').textContent = fmtC(VIEW_W ? wt : bt);
+}
+
+// ── Board render ─────────────────────────────────────────────────────────
+function rndB() {
+  const b = document.getElementById('board');
+  b.innerHTML = '';
+  const files  = 'abcdefgh';
+  const ranks  = VIEW_W ? [8,7,6,5,4,3,2,1] : [1,2,3,4,5,6,7,8];
+  const filArr = VIEW_W ? [0,1,2,3,4,5,6,7]  : [7,6,5,4,3,2,1,0];
+
+  ranks.forEach((rank, ri) => {
+    filArr.forEach((fi, ci) => {
+      const key = files[fi] + rank;
+      const lt  = (ri + ci) % 2 === 0;
+      const div = document.createElement('div');
+      div.className   = `sq ${lt ? 'lt' : 'dk'}`;
+      div.dataset.sq  = key;
+
+      const p = gs.board[key];
+      if (p) {
+        const span = document.createElement('span');
+        span.className   = 'piece ' + (p[0] === 'w' ? 'wp' : 'bp');
+        span.textContent = PIECES[p] || '';
+        div.appendChild(span);
+      }
+
+      if (key === gs.sel)                    div.classList.add('sel');
+      if (key === gs.lmf || key === gs.lmt)  div.classList.add('lm');
+      if (key === gs.checkSq)                div.classList.add('chk');
+
+      if (gs.sel && gs.lmMap[gs.sel]) {
+        if (gs.lmMap[gs.sel].includes(key))
+          div.classList.add(gs.board[key] ? 'pc' : 'pm');
+      }
+
+      if (ci === 0) {
+        const c = document.createElement('span');
+        c.className = 'co r'; c.textContent = rank; div.appendChild(c);
+      }
+      if (ri === ranks.length - 1) {
+        const c = document.createElement('span');
+        c.className = 'co f'; c.textContent = files[fi]; div.appendChild(c);
+      }
+
+      div.addEventListener('click', () => hClick(key));
+      b.appendChild(div);
+    });
+  });
+}
+
+// ── Click handler ────────────────────────────────────────────────────────
+function hClick(sq) {
+  if (WATCH || !ACTIVE || gameEnded) return;
+  if (!wsReady()) return;
+  const myColor = IS_W ? 'w' : 'b';
+  if (gs.turn !== myColor) return;
+
+  if (gs.sel === sq) { gs.sel = null; rndB(); return; }
+  const piece = gs.board[sq];
+
+  if (!gs.sel) {
+    if (piece && piece[0] === myColor && gs.lmMap[sq] && gs.lmMap[sq].length) {
+      gs.sel = sq; rndB();
+    }
+    return;
+  }
+
+  if (piece && piece[0] === myColor && gs.lmMap[sq] && gs.lmMap[sq].length) {
+    gs.sel = sq; rndB(); return;
+  }
+
+  const lms = gs.lmMap[gs.sel] || [];
+  if (!lms.includes(sq)) { gs.sel = null; rndB(); return; }
+
+  // Piyoda targ'ibi?
+  const sp = gs.board[gs.sel];
+  const tr = sq[1];
+  if (sp && sp[1] === 'P' && ((myColor === 'w' && tr === '8') || (myColor === 'b' && tr === '1'))) {
+    pendingPromo = {from: gs.sel, to: sq};
+    gs.sel = null;
+    showPromo(myColor);
+    return;
+  }
+
+  sendMove(gs.sel, sq);
+  gs.sel = null;
+}
+
+// ── Promotion ────────────────────────────────────────────────────────────
+function showPromo(color) {
+  const icons = {wQ:'♕',wR:'♖',wB:'♗',wN:'♘',bQ:'♛',bR:'♜',bB:'♝',bN:'♞'};
+  const opts  = document.getElementById('promoOpts');
+  opts.innerHTML = '';
+  ['Q','R','B','N'].forEach(t => {
+    const btn = document.createElement('div');
+    btn.className   = 'promo-opt';
+    btn.textContent = icons[color + t];
+    btn.onclick     = () => {
+      document.getElementById('promoOv').classList.remove('sh');
+      if (pendingPromo) { sendMove(pendingPromo.from, pendingPromo.to, t); pendingPromo = null; }
+    };
+    opts.appendChild(btn);
+  });
+  document.getElementById('promoOv').classList.add('sh');
+}
+
+// ── WebSocket ────────────────────────────────────────────────────────────
+let ws = null, wsRetry = 0;
+function wsReady() { return ws && ws.readyState === WebSocket.OPEN; }
+
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/chess/${GID}/`);
+
+  ws.onopen = () => {
+    wsRetry = 0;
+    // Qayta ulanganda ham lmMap yangilanishi kerak
+    if (ACTIVE && !WATCH && !gameEnded) initLegalMoves();
+  };
+
+  ws.onclose = () => {
+    if (ACTIVE && !gameEnded && wsRetry < 6) {
+      wsRetry++;
+      setTimeout(connectWS, 1500 * wsRetry);
+    }
+  };
+
+  ws.onerror = () => {};
+
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'move') {
+      gs.board   = d.board;
+      gs.turn    = d.turn;
+      gs.moves   = d.moves;
+      gs.lmf     = d.from_sq;
+      gs.lmt     = d.to_sq;
+      gs.lmMap   = d.legal_moves || {};
+      gs.checkSq = d.check_sq  || '';
+      wt = d.white_time; bt = d.black_time;
+      rndB(); updML(); updBars();
+      if (d.game_over) showOv(d.result, d.white_change, d.black_change);
+    } else if (d.type === 'chat') {
+      appC(d.username, d.message, d.username === ME);
+    } else if (d.type === 'draw_offer') {
+      if (!WATCH && confirm(`${d.from} durang taklif qildi. Qabul qilasizmi?`))
+        ws.send(JSON.stringify({type: 'draw_accept'}));
+    }
+  };
+}
+
+function sendMove(f, t, promo) {
+  if (!wsReady()) return;
+  const msg = {type:'move', from:f, to:t};
+  if (promo) msg.promo = promo;
+  ws.send(JSON.stringify(msg));
+}
+
+// ── Move list ────────────────────────────────────────────────────────────
+function updML() {
+  const ml = document.getElementById('ml');
+  if (!gs.moves.length) {
+    ml.innerHTML = '<div style="color:var(--muted);text-align:center;padding:18px;font-size:.78rem;">O\'yin boshlandi</div>';
+    return;
+  }
+  let h = '';
+  for (let i = 0; i < gs.moves.length; i += 2) {
+    const n = Math.floor(i/2) + 1;
+    h += `<div class="mp"><span class="mn">${n}.</span><span class="ms">${gs.moves[i]||''}</span><span class="ms">${gs.moves[i+1]||''}</span></div>`;
+  }
+  ml.innerHTML = h; ml.scrollTop = ml.scrollHeight;
+}
+function goM(d) {}
+
+// ── Clock ────────────────────────────────────────────────────────────────
+function fmtC(s) { const m = Math.floor(s/60); return `${m}:${(s%60).toString().padStart(2,'0')}`; }
+
+function updC() {
+  if (!ACTIVE || gameEnded) return;
+  if (gs.turn === 'w') {
+    wt = Math.max(0, wt-1);
+    const el = document.getElementById(VIEW_W ? 'botclk' : 'topclk');
+    el.textContent = fmtC(wt);
+    if (wt < 30) el.className = 'clk warn';
+  } else {
+    bt = Math.max(0, bt-1);
+    const el = document.getElementById(VIEW_W ? 'topclk' : 'botclk');
+    el.textContent = fmtC(bt);
+    if (bt < 30) el.className = 'clk warn';
+  }
+}
+if (ACTIVE) civ = setInterval(updC, 1000);
+
+// ── Game over ────────────────────────────────────────────────────────────
+function showOv(res, wc, bc) {
+  gameEnded = true;
+  clearInterval(civ);
+  const myW = IS_W ? wc : bc;
+  const em  = {white_wins: IS_W?'🏆':'😔', black_wins: IS_W?'😔':'🏆', draw:'🤝'};
+  const tt  = {white_wins: IS_W?"G'alaba!":'Mag\'lubiyat', black_wins: IS_W?'Mag\'lubiyat':"G'alaba!", draw:'Durang!'};
+  document.getElementById('ovem').textContent  = em[res]  || '♟';
+  document.getElementById('ovt').textContent   = tt[res]  || res;
+  document.getElementById('ovsub').textContent = myW > 0 ? `+${myW} reyting` : `${myW} reyting`;
+  document.getElementById('ov').classList.add('sh');
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────────
+function sndC() {
+  const i = document.getElementById('ci'), m = i.value.trim();
+  if (!m || !wsReady()) return;
+  ws.send(JSON.stringify({type:'chat', message:m})); i.value = '';
+}
+function appC(usr, msg, own) {
+  const ch = document.getElementById('gchat');
+  const d  = document.createElement('div');
+  d.className = own ? 'mo' : 'mth';
+  d.innerHTML = `<span class="mb">${msg}</span>`;
+  ch.appendChild(d); ch.scrollTop = ch.scrollHeight;
+}
+function offerDraw() { if (wsReady()) ws.send(JSON.stringify({type:'draw_offer'})); }
+
+// ── Initial legal moves ───────────────────────────────────────────────────
+function initLegalMoves() {
+  fetch(`/chess/game/${GID}/legal-moves/`)
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d) return;
+      if (d.legal_moves) gs.lmMap = d.legal_moves;
+      if (d.turn)        gs.turn  = d.turn;
+      if (d.in_check && d.turn) {
+        // Shoh ostida bo'lgan shoh kvadratini topamiz
+        for (const [sq, p] of Object.entries(gs.board)) {
+          if (p === d.turn + 'K') { gs.checkSq = sq; break; }
+        }
+      }
+      rndB(); updBars();
+    })
+    .catch(() => {});
+}
+
+// Har 5 soniyada lmMap yangilab turish (WS uzilishiga qarshi)
+let lmRefreshTimer = null;
+function startLmRefresh() {
+  if (lmRefreshTimer) return;
+  lmRefreshTimer = setInterval(() => {
+    if (!ACTIVE || gameEnded || !wsReady()) {
+      // WS ishlamasa ham yangilash
+      initLegalMoves();
+    }
+  }, 5000);
+}
+
+// ── Abandon ───────────────────────────────────────────────────────────────
+function showAbandonModal(url) {
+  pendingNavUrl = url;
+  document.getElementById('abandonModal').classList.add('sh');
+}
+function confirmAbandon() {
+  document.getElementById('abandonModal').classList.remove('sh');
+  fetch(`/chess/game/${GID}/abandon/`, {
+    method: 'POST', headers: {'X-CSRFToken': gc('csrftoken')},
+  }).finally(() => { gameEnded = true; if (pendingNavUrl) window.location.href = pendingNavUrl; });
+}
+function cancelAbandon() {
+  document.getElementById('abandonModal').classList.remove('sh');
+  pendingNavUrl = null;
+}
+
+// ── Sahifadan chiqishda ogohlantirish ─────────────────────────────────────
+if (ACTIVE && !WATCH) {
+
+  // Desktop: link bosishda modal
+  document.addEventListener('click', function(e) {
+    if (gameEnded) return;
+    const link = e.target.closest('a[href]');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || href.includes(`/chess/game/${GID}`) || href.includes('resign')) return;
+    e.preventDefault();
+    showAbandonModal(href);
+  });
+
+  // Desktop: sahifa yopilganda
+  window.addEventListener('beforeunload', function(e) {
+    if (gameEnded) return;
+    e.preventDefault();
+    e.returnValue = "O'yin hali tugamagan!";
+    return e.returnValue;
+  });
+
+  // Desktop + mobil: orqaga tugmasi
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', function() {
+    if (gameEnded) return;
+    history.pushState(null, '', location.href);
+    showAbandonModal('/play/');
+  });
+
+  // iOS Safari: sahifa ko'rinmaydigan bo'lganda (swipe back, tab o'zgartirish)
+  let _leaveTimer = null;
+  document.addEventListener('visibilitychange', function() {
+    if (gameEnded) return;
+    if (document.visibilityState === 'hidden') {
+      _leaveTimer = setTimeout(function() {
+        fetch(`/chess/game/${GID}/abandon/`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          keepalive: true,
+        });
+      }, 5000);
+    } else {
+      clearTimeout(_leaveTimer);
+    }
+  });
+}
+
+// ── Util ──────────────────────────────────────────────────────────────────
+function gc(n) { const m = document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)'); return m?m[2]:null; }
+
+// ── Init ──────────────────────────────────────────────────────────────────
+setupBars();
+rndB();
+updML();
+connectWS();
+if (ACTIVE && !WATCH) {
+  initLegalMoves();
+  startLmRefresh();
+}
+
+{% if game.status != 'active' %}
+setTimeout(() => showOv('{{ game.status }}', {{ game.white_rating_change }}, {{ game.black_rating_change }}), 600);
+{% endif %}
+</script>{% endblock %}

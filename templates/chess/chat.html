@@ -1,0 +1,497 @@
+{% extends 'base.html' %}{% block title %}Chat{% endblock %}
+{% block extra_css %}<style>
+/* Chat sahifasida body va main scroll o'chadi */
+body{overflow:hidden;}
+main{padding:0!important;overflow:hidden;}
+.chat-wrap{
+  display:grid;
+  grid-template-columns:300px 1fr;
+  height:calc(100vh - 64px);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:0;
+  overflow:hidden;
+  box-shadow:none;
+}
+@media(max-width:900px){.chat-wrap{grid-template-columns:260px 1fr;}}
+@media(max-width:640px){
+  .chat-wrap{
+    grid-template-columns:1fr;
+    position:fixed;
+    top:60px;
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    height:auto;
+    border-radius:0;
+    z-index:1;
+  }
+  main{margin:0!important;max-width:100%!important;}
+  .side{display:flex!important;}
+  .main{display:none!important;}
+  .chat-wrap.chat-open .side{display:none!important;}
+  .chat-wrap.chat-open .main{display:flex!important;}
+  .back-btn{display:flex!important;}
+}
+.side{border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg2);overflow:hidden;}
+.side-hdr{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.side-hdr h3{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;margin-bottom:8px;}
+.side-search{width:100%;padding:7px 11px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.77rem;outline:none;}
+.side-search:focus{border-color:var(--accent);}
+.side-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.stab{flex:1;padding:8px;font-size:.72rem;font-weight:600;text-align:center;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;}
+.stab.act{color:var(--accent);border-bottom-color:var(--accent);}
+.side-list{flex:1;overflow-y:auto;}
+.ci{display:flex;align-items:center;gap:9px;padding:11px 14px;transition:background .12s;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;}
+.ci:hover,.ci.act{background:var(--hover);}
+.ci .ci-info{flex:1;min-width:0;}
+.ci .ci-name{font-weight:600;font-size:.81rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci .ci-last{font-size:.71rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.ci .ci-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
+.ci-time{font-size:.65rem;color:var(--muted);}
+.ubadge{background:var(--danger);color:#fff;border-radius:50%;width:17px;height:17px;font-size:.58rem;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.oi{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);transition:background .12s;}
+.oi:hover{background:var(--hover);}
+.oi .oi-info{flex:1;min-width:0;}
+.oi .oi-name{font-weight:600;font-size:.81rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.oi .oi-rat{font-size:.7rem;color:var(--accent);}
+.oi-actions{display:flex;gap:5px;flex-shrink:0;}
+.odot{width:8px;height:8px;background:var(--success);border-radius:50%;flex-shrink:0;}
+.odot.off{background:var(--muted);}
+.main{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+.main-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg2);flex-shrink:0;}
+.main-hdr-info{flex:1;min-width:0;}
+.main-hdr-name{font-weight:700;font-size:.88rem;}
+.main-hdr-status{font-size:.71rem;color:var(--success);}
+.main-hdr-actions{display:flex;gap:6px;flex-shrink:0;}
+.back-btn{display:none;align-items:center;justify-content:center;width:32px;height:32px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text);flex-shrink:0;}
+.msgs{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:0;width:100%;}
+.msg{max-width:75%;word-break:break-word;overflow-wrap:break-word;}
+@media(max-width:640px){.msg{max-width:88%;}}
+.msg.own{align-self:flex-end;}.msg.oth{align-self:flex-start;}
+.mb2{padding:8px 12px;border-radius:13px;font-size:.83rem;line-height:1.5;word-break:break-word;}
+.msg.own .mb2{background:var(--accent);color:#000;border-radius:13px 13px 3px 13px;}
+.msg.oth .mb2{background:var(--bg2);border-radius:13px 13px 13px 3px;}
+.mtime{font-size:.63rem;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:3px;}
+.msg.own .mtime{justify-content:flex-end;}
+.tick{font-size:.72rem;font-weight:700;}.tick.read{color:#4fc3f7;opacity:1;}.tick.sent{color:rgba(255,255,255,0.35);}
+.msg-input{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--bg2);flex-shrink:0;}
+.msg-input input{flex:1;padding:9px 12px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:16px;outline:none;}
+.msg-input input:focus{border-color:var(--accent);}
+@media(max-width:640px){
+  .msg-input{position:fixed;left:0;right:0;bottom:0;z-index:10;padding:10px 12px;border-top:1px solid var(--border);}
+  .msgs{padding-bottom:70px;}
+}
+.send-btn{width:38px;height:38px;background:var(--accent);border:none;border-radius:9px;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:8px;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:4000;align-items:center;justify-content:center;}
+.modal-bg.show{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--accent);border-radius:16px;padding:28px;max-width:380px;width:90%;text-align:center;box-shadow:0 0 60px var(--aglow);}
+.modal-box h2{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;margin-bottom:8px;}
+.modal-box p{color:var(--muted);font-size:.82rem;margin-bottom:18px;}
+.modal-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.tc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px;}
+.tc-btn{background:var(--bg2);border:2px solid var(--border);border-radius:8px;padding:8px 5px;text-align:center;cursor:pointer;font-size:.76rem;font-weight:600;transition:all .15s;}
+.tc-btn:hover,.tc-btn.sel{border-color:var(--accent);background:var(--aglow);color:var(--accent);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:36px;height:36px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 10px;}
+</style>{% endblock %}
+
+{% block content %}
+<div class="chat-wrap {% if active_partner %}chat-open{% endif %}" id="chatWrap">
+  <div class="side" id="sidePanel">
+    <div class="side-hdr">
+      <h3><i class="fas fa-comments" style="color:var(--accent)"></i> Chat</h3>
+      <input class="side-search" id="srch" placeholder="🔍 Qidirish..." oninput="filterList(this.value)">
+    </div>
+    <div class="side-tabs">
+      <button class="stab act" id="tab-chats-btn" onclick="switchTab('chats',this)">
+        💬 Suhbatlar
+        {% if total_unread %}<span id="unread-badge" style="background:var(--danger);color:#fff;border-radius:10px;padding:1px 6px;font-size:.62rem;margin-left:4px;">{{ total_unread }}</span>{% else %}<span id="unread-badge" style="display:none;background:var(--danger);color:#fff;border-radius:10px;padding:1px 6px;font-size:.62rem;margin-left:4px;"></span>{% endif %}
+      </button>
+      <button class="stab" id="tab-online-btn" onclick="switchTab('online',this)">
+        🟢 Online <span style="background:rgba(82,192,120,.2);color:var(--success);border-radius:10px;padding:1px 6px;font-size:.62rem;margin-left:4px;">{{ online_players|length }}</span>
+      </button>
+    </div>
+    <div class="side-list" id="tab-chats">
+      {% for c in conversations %}
+      <a href="{% url 'chat_with' c.partner.username %}" class="ci {% if active_partner and c.partner.username == active_partner.username %}act{% endif %}" data-name="{{ c.partner.username|lower }}" data-username="{{ c.partner.username }}">
+        <div style="position:relative;flex-shrink:0;">
+          <div class="avatar" style="width:36px;height:36px;font-size:.8rem;">{% if c.partner.profile.avatar %}<img src="{{ c.partner.profile.avatar.url }}" alt="">{% else %}{{ c.partner.username|first|upper }}{% endif %}</div>
+          <div class="odot {% if not c.partner_online %}off{% endif %}" data-user="{{ c.partner.username }}" style="position:absolute;bottom:0;right:0;border:2px solid var(--bg2);"></div>
+        </div>
+        <div class="ci-info">
+          <div class="ci-name">{{ c.partner.username }} <span style="color:var(--muted);font-size:.67rem;font-weight:400;">{{ c.partner.profile.rating }}</span></div>
+          <div class="ci-last">{{ c.last_message|default:"Suhbatni boshlang" }}</div>
+        </div>
+        <div class="ci-meta">
+          {% if c.last_time %}<div class="ci-time">{{ c.last_time|date:"H:i" }}</div>{% endif %}
+          {% if c.unread_count %}<div class="ubadge">{{ c.unread_count }}</div>{% endif %}
+        </div>
+      </a>
+      {% empty %}
+      <div style="padding:30px 14px;text-align:center;color:var(--muted);font-size:.8rem;"><div style="font-size:2rem;opacity:.25;margin-bottom:8px;">💬</div>Hali suhbat yo'q</div>
+      {% endfor %}
+    </div>
+    <div class="side-list" id="tab-online" style="display:none;">
+      {% for p in online_players %}
+      <div class="oi" data-name="{{ p.user.username|lower }}">
+        <div style="position:relative;flex-shrink:0;">
+          <div class="avatar" style="width:34px;height:34px;font-size:.78rem;">{% if p.avatar %}<img src="{{ p.avatar.url }}" alt="">{% else %}{{ p.user.username|first|upper }}{% endif %}</div>
+          <div class="odot" data-user="{{ p.user.username }}" style="position:absolute;bottom:0;right:0;border:2px solid var(--bg2);"></div>
+        </div>
+        <div class="oi-info">
+          <div class="oi-name">{{ p.user.username }}</div>
+          <div class="oi-rat">{{ p.rating }}</div>
+        </div>
+        <div class="oi-actions">
+          <a href="{% url 'chat_with' p.user.username %}" class="btn btn-outline btn-sm"><i class="fas fa-comment"></i></a>
+          <button class="btn btn-primary btn-sm" onclick="openChallengeModal('{{ p.user.username }}')"><i class="fas fa-chess"></i></button>
+        </div>
+      </div>
+      {% empty %}
+      <div style="padding:30px 14px;text-align:center;color:var(--muted);font-size:.8rem;"><div style="font-size:2rem;opacity:.25;margin-bottom:8px;">👤</div>Hozir hech kim online emas</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if active_partner %}
+  <div class="main" id="main-panel">
+    <div class="main-hdr">
+      <button class="back-btn" onclick="window.location.href='/chat/'"><i class="fas fa-arrow-left"></i></button>
+      <div style="position:relative;flex-shrink:0;">
+        <div class="avatar">{% if active_partner.profile.avatar %}<img src="{{ active_partner.profile.avatar.url }}" alt="">{% else %}{{ active_partner.username|first|upper }}{% endif %}</div>
+        <div class="odot" data-user="{{ active_partner.username }}" style="position:absolute;bottom:0;right:0;border:2px solid var(--bg2);"></div>
+      </div>
+      <div id="partner-username-data" data-username="{{ active_partner.username }}" class="main-hdr-info">
+        <div class="main-hdr-name">{{ active_partner.username }}</div>
+        <div class="main-hdr-status">Online</div>
+      </div>
+      <div class="main-hdr-actions">
+        <a href="{% url 'profile' active_partner.username %}" class="btn btn-outline btn-sm"><i class="fas fa-user"></i></a>
+        <button class="btn btn-primary btn-sm" onclick="openChallengeModal('{{ active_partner.username }}')"><i class="fas fa-chess"></i></button>
+      </div>
+    </div>
+    <div class="msgs" id="msgs">
+      {% for m in chat_messages %}
+      <div class="msg {% if m.sender == request.user %}own{% else %}oth{% endif %}">
+        <div class="mb2">{{ m.content }}</div>
+        <div class="mtime">
+          {{ m.created_at|date:"H:i" }}
+          {% if m.sender == request.user %}<span class="tick {% if m.is_read %}read{% else %}sent{% endif %}">{% if m.is_read %}✓✓{% else %}✓{% endif %}</span>{% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div id="empty-msg" style="text-align:center;color:var(--muted);font-size:.82rem;padding:40px 20px;margin:auto;"><div style="font-size:2.5rem;opacity:.25;margin-bottom:10px;">💬</div>Suhbatni boshlang!</div>
+      {% endfor %}
+    </div>
+    <div class="msg-input">
+      <input type="text" id="mi" placeholder="Xabar yozing..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="send-btn" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+  {% else %}
+  <div class="main" id="main-panel">
+    <div class="empty-state">
+      <div style="font-size:3rem;opacity:.18;">♛</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;">Chat tanlang</div>
+      <div style="font-size:.78rem;">Chap paneldan suhbat tanlang</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}<script>
+const ME = "{{ request.user.username }}";
+let currentInviteId = null;
+let sentInviteId    = null;
+let challengeTarget = null;
+let selectedTC      = '1+0';
+let pollTimer       = null;
+let responding      = false;  // ikki marta bosilishning oldini olish
+
+// ── Tab almashtirish ──────────────────────────────────────────────────────
+function switchTab(tab, el) {
+  document.querySelectorAll('.stab').forEach(b => b.classList.remove('act'));
+  el.classList.add('act');
+  // Faqat ro'yxatni almashtirish — chat paneli o'zgarmaydi
+  document.getElementById('tab-chats').style.display  = tab === 'chats'  ? '' : 'none';
+  document.getElementById('tab-online').style.display = tab === 'online' ? '' : 'none';
+}
+
+// ── Qidirish ──────────────────────────────────────────────────────────────
+function filterList(q) {
+  const lq = q.toLowerCase();
+  document.querySelectorAll('.ci, .oi').forEach(el => {
+    el.style.display = el.dataset.name.includes(lq) ? '' : 'none';
+  });
+}
+
+{% if active_partner %}
+const PARTNER = "{{ active_partner.username }}";
+
+// ── WebSocket chat ────────────────────────────────────────────────────────
+const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+const wsChat = new WebSocket(`${proto}://${location.host}/ws/chat/${PARTNER}/`);
+
+wsChat.onmessage = e => {
+  const d = JSON.parse(e.data);
+  if (d.type === 'chat') {
+    appendMsg(d.username, d.message, d.username === ME);
+    // Raqibdan kelgan xabar — darhol o'qilgan deb belgilash
+    if (d.username !== ME) {
+      markRead();
+    }
+  } else if (d.type === 'read_receipt') {
+    // Raqib xabarlarni o'qidi — barcha ✓ ni ✓✓ ga o'zgartir
+    document.querySelectorAll('.msg.own .tick').forEach(el => {
+      el.textContent = '✓✓';
+      el.classList.remove('sent');
+      el.classList.add('read');
+    });
+  }
+};
+
+wsChat.onerror = err => console.error('Chat WS error:', err);
+
+function markRead() {
+  // Raqibdan kelgan xabarlarni DB da o'qilgan deb belgilash
+  // Tick belgisi faqat read_receipt orqali o'zgaradi
+  fetch(`/chat/mark-read/${PARTNER}/`, {
+    method: 'POST', headers: {'X-CSRFToken': gc('csrftoken')}
+  })
+  .then(r => r.json())
+  .then(d => {
+    // Navbar badge tozalash
+    const navBadge = document.getElementById('nav-chat-badge');
+    if (navBadge) { navBadge.style.display = 'none'; navBadge.textContent = ''; }
+    const tabBadge = document.getElementById('unread-badge');
+    if (tabBadge) { tabBadge.style.display = 'none'; tabBadge.textContent = ''; }
+  })
+  .catch(() => {});
+}
+
+// ── Xabar yuborish ────────────────────────────────────────────────────────
+function sendMsg() {
+  const input = document.getElementById('mi');
+  const text  = input.value.trim();
+  if (!text) return;
+  if (wsChat.readyState !== WebSocket.OPEN) {
+    showToast("Ulanish yo'q, qayta urinib ko'ring", 'error');
+    return;
+  }
+  wsChat.send(JSON.stringify({message: text}));
+  input.value = '';
+}
+
+function appendMsg(user, content, own) {
+  const msgs = document.getElementById('msgs');
+  const empty = document.getElementById('empty-msg');
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = `msg ${own ? 'own' : 'oth'}`;
+  const now = new Date();
+  const t   = `${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+  div.innerHTML = `<div class="mb2">${esc(content)}</div><div class="mtime">${t}${own ? ' <span class="tick" style="font-size:.65rem;opacity:.4;">✓</span>' : ''}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Sahifa ochilganda o'qilmagan xabarlarni belgilash
+markRead();
+{% else %}
+function sendMsg() {}
+{% endif %}
+
+// ── Chaqiruv yuborish ─────────────────────────────────────────────────────
+function openChallenge(username) {
+  challengeTarget = username;
+  document.getElementById('send-title').textContent = `${username} ni chaqirish`;
+  document.getElementById('send-desc').textContent  = 'Vaqt nazoratini tanlang';
+  document.getElementById('tc-grid').style.display         = 'grid';
+  document.getElementById('send-btns').style.display       = 'flex';
+  document.getElementById('waiting-state').style.display   = 'none';
+  document.getElementById('sendModal').classList.add('show');
+}
+
+function closeSendModal() {
+  document.getElementById('sendModal').classList.remove('show');
+  challengeTarget = null;
+}
+
+function selTC(el, tc) {
+  document.querySelectorAll('.tc-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedTC = tc;
+}
+
+function doChallenge() {
+  if (!challengeTarget) return;
+  // Kutish holatiga o'tish
+  document.getElementById('tc-grid').style.display       = 'none';
+  document.getElementById('send-btns').style.display     = 'none';
+  document.getElementById('waiting-state').style.display = 'block';
+  document.getElementById('send-title').textContent = `${challengeTarget} ga yuborildi`;
+
+  fetch(`/challenge/${encodeURIComponent(challengeTarget)}/?tc=${selectedTC}`)
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) {
+        closeSendModal();
+        showToast(d.error || 'Xatolik yuz berdi', 'error');
+        return;
+      }
+      sentInviteId = d.invite_id;
+      // Polling — WS ishlamasa ham kuzatish
+      startSendPoll(d.invite_id);
+    })
+    .catch(() => { closeSendModal(); showToast('Tarmoq xatosi', 'error'); });
+}
+
+function startSendPoll(inviteId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => {
+    if (!sentInviteId) { clearInterval(pollTimer); return; }
+    fetch(`/challenge/status/${inviteId}/`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.status === 'accepted' && d.game_id) {
+          clearInterval(pollTimer);
+          sentInviteId = null;
+          closeSendModal();
+          window.location.href = `/chess/game/${d.game_id}/`;
+        } else if (d.status === 'declined' || d.status === 'cancelled') {
+          clearInterval(pollTimer);
+          sentInviteId = null;
+          closeSendModal();
+          showToast('Taklif rad etildi ❌', 'error');
+        }
+      })
+      .catch(() => {});
+  }, 1500);
+}
+
+function cancelChallenge() {
+  clearInterval(pollTimer);
+  const id = sentInviteId;
+  sentInviteId = null;
+  closeSendModal();
+  if (id) {
+    fetch(`/challenge/cancel/${id}/`, {
+      method: 'POST', headers: {'X-CSRFToken': gc('csrftoken')}
+    });
+  }
+}
+
+// ── Kelgan chaqiruvga javob ───────────────────────────────────────────────
+function respondInvite(accept) {
+  if (!currentInviteId || responding) return;
+  responding = true;
+
+  const id = currentInviteId;
+  currentInviteId = null;
+  document.getElementById('recvModal').classList.remove('show');
+  document.getElementById('acceptBtn').disabled = true;
+
+  fetch(`/challenge/respond/${id}/`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': gc('csrftoken')},
+    body: JSON.stringify({accept: accept})
+  })
+  .then(r => r.json())
+  .then(d => {
+    responding = false;
+    document.getElementById('acceptBtn').disabled = false;
+    if (accept && d.game_id) {
+      window.location.href = `/chess/game/${d.game_id}/`;
+    } else if (!accept) {
+      showToast('Taklif rad etildi', 'info');
+    }
+  })
+  .catch(() => {
+    responding = false;
+    document.getElementById('acceptBtn').disabled = false;
+  });
+}
+
+// ── WebSocket queue (chaqiruv + o'yin topildi) ────────────────────────────
+const wsQ = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/queue/`);
+
+wsQ.onmessage = e => {
+  const d = JSON.parse(e.data);
+  if (d.type === 'game_found') {
+    // O'yin topildi — hamma modallarni yopib o'yinga o'tamiz
+    clearInterval(pollTimer);
+    window.location.href = `/chess/game/${d.game_id}/`;
+  } else if (d.type === 'challenge_invite') {
+    showInviteModal(d.invite_id, d.from_user, d.time_control);
+  } else if (d.type === 'invite_response') {
+    if (!d.accepted) {
+      clearInterval(pollTimer);
+      sentInviteId = null;
+      closeSendModal();
+      showToast(`${d.from_user} taklifni rad etdi`, 'error');
+    }
+  }
+};
+
+function showInviteModal(inviteId, fromUser, tc) {
+  if (currentInviteId) return; // allaqachon modal ochiq
+  currentInviteId = inviteId;
+  document.getElementById('recv-desc').textContent =
+    `${fromUser} sizni ${tc} o'yinga chaqirmoqda`;
+  document.getElementById('recvModal').classList.add('show');
+}
+
+// ── Polling — WS ishlamasa kelgan taklifni tekshirish ─────────────────────
+setInterval(() => {
+  if (currentInviteId || responding) return;
+  fetch('/play/check-invite/')
+    .then(r => r.json())
+    .then(d => {
+      if (d.invite_id && d.invite_id !== currentInviteId) {
+        showInviteModal(d.invite_id, d.from_user, d.time_control);
+      }
+    })
+    .catch(() => {});
+}, 3000);
+
+// ── Sahifa ochilganda ─────────────────────────────────────────────────────
+{% if active_partner %}
+const msgs = document.getElementById('msgs');
+if (msgs) msgs.scrollTop = msgs.scrollHeight;
+{% endif %}
+
+{% if pending_invite %}
+setTimeout(() => {
+  showInviteModal({{ pending_invite.id }}, "{{ pending_invite.sender.username }}", "{{ pending_invite.time_control }}");
+}, 400);
+{% endif %}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg, type) { /* bildirishnoma o'chirildi */ }
+
+function gc(n) { const m = document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)'); return m?m[2]:null; }
+
+// ── Mobil: klaviatura ochilganda input tepaga siljiydi ────────────────────
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const input = document.querySelector('.msg-input');
+    if (!input) return;
+    const keyboardH = window.innerHeight - window.visualViewport.height;
+    input.style.bottom = keyboardH > 50 ? keyboardH + 'px' : '0';
+    // Xabarlar scroll ostida qolmasligi uchun
+    const msgs = document.getElementById('msgs');
+    if (msgs) {
+      msgs.style.paddingBottom = keyboardH > 50 ? (keyboardH + 70) + 'px' : '70px';
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  });
+}
+</script>{% endblock %}

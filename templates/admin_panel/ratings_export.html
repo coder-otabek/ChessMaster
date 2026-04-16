@@ -1,0 +1,229 @@
+{% extends 'base.html' %}{% block title %}Excel Export — Admin{% endblock %}
+{% block extra_css %}<style>
+.al{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:start;}
+.an{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:80px;}
+.anh{padding:18px;background:linear-gradient(135deg,var(--accent),#e8c05a);color:#000;}
+.anh h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:900;}
+.an a{display:flex;align-items:center;gap:9px;padding:11px 18px;color:var(--text2);text-decoration:none;font-size:.8rem;transition:all .15s;border-left:3px solid transparent;}
+.an a:hover,.an a.ac{color:var(--accent);background:var(--aglow);border-left-color:var(--accent);}
+.ns{padding:7px 18px 3px;font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:7px;}
+
+/* Excel export specific */
+.xl-btn{background:linear-gradient(135deg,#1D6F42,#2e9c5f);color:#fff;border:none;display:inline-flex;align-items:center;gap:9px;padding:14px 28px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .25s;text-transform:uppercase;letter-spacing:.5px;}
+.xl-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(29,111,66,.4);}
+.xl-btn:disabled{opacity:.5;transform:none;cursor:not-allowed;}
+.csv-btn{background:transparent;color:var(--success);border:2px solid var(--success);display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;}
+.csv-btn:hover{background:rgba(82,192,120,.1);}
+
+.sopts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}
+.sopt{background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;user-select:none;}
+.sopt:hover{border-color:var(--accent);}
+.sopt.sel{border-color:var(--accent);background:var(--aglow);}
+.sopt .oi{font-size:1.8rem;margin-bottom:8px;}
+.sopt .ol{font-weight:700;font-size:.85rem;}
+.sopt .od{font-size:.7rem;color:var(--muted);margin-top:4px;line-height:1.4;}
+
+.frow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:18px;background:var(--bg2);border-radius:11px;margin-bottom:22px;}
+
+/* Preview table */
+.pvw{max-height:360px;overflow-y:auto;}
+.sbd{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.sbd span{display:inline-flex;align-items:center;gap:5px;padding:3px 11px;border-radius:20px;font-size:.7rem;font-weight:700;background:var(--aglow);color:var(--accent);border:1px solid var(--accent);}
+
+.my-r td{background:var(--aglow)!important;}
+</style>{% endblock %}
+
+{% block content %}
+<div class="al">
+  <div class="an">
+    <div class="anh"><h3><i class="fas fa-shield-halved"></i> Admin Panel</h3><div style="font-size:.72rem;opacity:.7;">{{ request.user.username }}</div></div>
+    <div class="ns">Boshqaruv</div>
+    <a href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="{% url 'admin_players' %}"><i class="fas fa-users"></i> O'yinchilar</a>
+    <a href="{% url 'admin_games' %}"><i class="fas fa-chess-board"></i> O'yinlar</a>
+    <a href="{% url 'admin_live_games' %}"><i class="fas fa-circle" style="color:var(--danger);font-size:.5rem;vertical-align:middle;"></i> Jonli o'yinlar</a>
+    <div class="ns">Export</div>
+    <a href="{% url 'admin_ratings' %}" class="ac"><i class="fas fa-file-excel" style="color:#1D6F42;"></i> Excel / CSV</a>
+    {% if request.user.is_superuser %}
+    <div class="ns">Superuser</div>
+    <a href="{% url 'superuser_users' %}"><i class="fas fa-user-shield"></i> Foydalanuvchilar</a>
+    <a href="{% url 'superuser_add_user' %}"><i class="fas fa-user-plus"></i> Qo'shish</a>
+    <a href="{% url 'superuser_settings' %}"><i class="fas fa-cog"></i> Sozlamalar</a>
+    {% endif %}
+  </div>
+
+  <div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;margin-bottom:22px;">
+      <i class="fas fa-file-excel" style="color:#1D6F42;"></i> Reyting — Excel &amp; CSV Export
+    </h1>
+
+    <!-- Quick download buttons at top -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:14px;">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;margin-bottom:4px;">Tezkor yuklab olish</div>
+        <div style="font-size:.75rem;color:var(--muted);">Barcha varaqlar bilan to'liq Excel fayl</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <form method="post" action="{% url 'admin_export_excel' %}" id="quick-form">
+          {% csrf_token %}
+          <input type="hidden" name="sheets" value="main,top10,stats,games{% if request.user.is_superuser %},admin{% endif %}">
+          <input type="hidden" name="limit" value="all">
+          <input type="hidden" name="status_filter" value="all">
+          <input type="hidden" name="rating_filter" value="all">
+          <button type="submit" class="xl-btn" id="quick-btn">
+            <i class="fas fa-file-excel"></i> Excel yuklab olish (.xlsx)
+          </button>
+        </form>
+        <a href="{% url 'admin_export_csv' %}" class="csv-btn">
+          <i class="fas fa-file-csv"></i> CSV
+        </a>
+      </div>
+    </div>
+
+    <!-- Advanced export -->
+    <div class="card" style="margin-bottom:22px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:6px;"><i class="fas fa-sliders"></i> Kengaytirilgan sozlamalar</h3>
+      <p style="color:var(--muted);font-size:.78rem;margin-bottom:16px;">Qaysi varaqlarni va qanday filtr bilan yuklab olishni tanlang</p>
+
+      <div class="sopts">
+        <div class="sopt sel" id="opt-main" onclick="togOpt(this,'main')">
+          <div class="oi">📋</div>
+          <div class="ol">Reyting Jadvali</div>
+          <div class="od">Barcha o'yinchilar, reyting, g'alaba/mag'lubiyat</div>
+        </div>
+        <div class="sopt sel" id="opt-top10" onclick="togOpt(this,'top10')">
+          <div class="oi">🏆</div>
+          <div class="ol">Top 10 Tahlil</div>
+          <div class="od">Top 10 + bar diagramma</div>
+        </div>
+        <div class="sopt sel" id="opt-stats" onclick="togOpt(this,'stats')">
+          <div class="oi">📊</div>
+          <div class="ol">Statistika</div>
+          <div class="od">Platforma ko'rsatkichlari va daraja taqsimoti</div>
+        </div>
+        <div class="sopt sel" id="opt-games" onclick="togOpt(this,'games')">
+          <div class="oi">♟</div>
+          <div class="ol">O'yinlar Tarixi</div>
+          <div class="od">Oxirgi 500 ta o'yin natijalari</div>
+        </div>
+        {% if request.user.is_superuser %}
+        <div class="sopt sel" id="opt-admin" onclick="togOpt(this,'admin')">
+          <div class="oi">🛡</div>
+          <div class="ol">Admin Hisoboti</div>
+          <div class="od">Email, login tarixi — maxfiy (faqat superuser)</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="frow">
+        <div class="form-group" style="margin:0;">
+          <label>O'yinchilar soni</label>
+          <select id="flimit">
+            <option value="all">Barchasi</option>
+            <option value="10">Top 10</option>
+            <option value="25">Top 25</option>
+            <option value="50">Top 50</option>
+            <option value="100">Top 100</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Holat bo'yicha</label>
+          <select id="fstatus">
+            <option value="all">Barchasi</option>
+            <option value="active">Faqat aktiv</option>
+            <option value="inactive">Faqat bloklangan</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Minimal reyting</label>
+          <select id="frating">
+            <option value="all">Barchasi</option>
+            <option value="2400">Grandmaster (2400+)</option>
+            <option value="2200">Master (2200+)</option>
+            <option value="2000">Expert (2000+)</option>
+            <option value="1800">Advanced (1800+)</option>
+          </select>
+        </div>
+      </div>
+
+      <form method="post" action="{% url 'admin_export_excel' %}" id="adv-form">
+        {% csrf_token %}
+        <input type="hidden" name="sheets" id="adv-sheets" value="main,top10,stats,games{% if request.user.is_superuser %},admin{% endif %}">
+        <input type="hidden" name="limit" id="adv-limit" value="all">
+        <input type="hidden" name="status_filter" id="adv-status" value="all">
+        <input type="hidden" name="rating_filter" id="adv-rating" value="all">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="submit" class="xl-btn" id="adv-btn">
+            <i class="fas fa-file-excel"></i> Sozlangan Excel yuklash
+          </button>
+          <a href="{% url 'admin_export_csv' %}" class="csv-btn">
+            <i class="fas fa-file-csv"></i> CSV yuklash
+          </a>
+        </div>
+      </form>
+      <p style="color:var(--muted);font-size:.73rem;margin-top:10px;"><i class="fas fa-info-circle"></i> Excel fayli professional formatda, rangli dizayn, formulalar va diagramma bilan yaratiladi.</p>
+    </div>
+
+    <!-- Preview -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:1rem;"><i class="fas fa-eye" style="color:var(--accent)"></i> Ko'rib chiqish ({{ players|length }} ta o'yinchi)</h3>
+        <div class="sbd">
+          <span>📋 Reyting</span>
+          <span>🏆 Top 10</span>
+          <span>📊 Statistika</span>
+          <span>♟ O'yinlar</span>
+          {% if request.user.is_superuser %}<span>🛡 Admin</span>{% endif %}
+        </div>
+      </div>
+      <div class="pvw">
+        <table>
+          <thead><tr><th>#</th><th>O'yinchi</th><th>Reyting</th><th>G'alaba</th><th>Mag'lubiyat</th><th>Durang</th><th>Win%</th><th>Holat</th></tr></thead>
+          <tbody>
+          {% for p in players %}
+          <tr {% if request.user.is_authenticated and p.user == request.user %}class="my-r"{% endif %}>
+            <td>{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}<span style="color:var(--muted)">{{ forloop.counter }}</span>{% endif %}</td>
+            <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="width:26px;height:26px;font-size:.68rem;">{{ p.user.username|first|upper }}</div><span style="font-weight:600;font-size:.83rem;">{{ p.user.username }}</span></div></td>
+            <td><span style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--accent);">{{ p.rating }}</span></td>
+            <td style="color:var(--success)">{{ p.wins }}</td>
+            <td style="color:var(--danger)">{{ p.losses }}</td>
+            <td style="color:var(--muted)">{{ p.draws }}</td>
+            <td><span style="color:{% if p.win_rate >= 60 %}var(--success){% elif p.win_rate >= 40 %}var(--accent){% else %}var(--danger){% endif %};">{% if p.games_played %}{{ p.win_rate|floatformat:1 }}%{% else %}—{% endif %}</span></td>
+            <td>{% if p.user.is_active %}<span style="color:var(--success);font-size:.75rem;">✓ Aktiv</span>{% else %}<span style="color:var(--danger);font-size:.75rem;">✗ Blok</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script>
+let sel=new Set(['main','top10','stats','games'{% if request.user.is_superuser %},'admin'{% endif %}]);
+
+function togOpt(el,key){
+  el.classList.toggle('sel');
+  if(sel.has(key))sel.delete(key);else sel.add(key);
+  updSheets();
+  document.getElementById('adv-btn').disabled=sel.size===0;
+}
+
+function updSheets(){
+  document.getElementById('adv-sheets').value=[...sel].join(',');
+}
+
+document.getElementById('flimit').addEventListener('change',e=>document.getElementById('adv-limit').value=e.target.value);
+document.getElementById('fstatus').addEventListener('change',e=>document.getElementById('adv-status').value=e.target.value);
+document.getElementById('frating').addEventListener('change',e=>document.getElementById('adv-rating').value=e.target.value);
+
+// Download animation
+function animBtn(btn,origHtml){
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Tayyorlanmoqda...';
+  btn.disabled=true;
+  setTimeout(()=>{btn.innerHTML=origHtml;btn.disabled=false;},4000);
+}
+document.getElementById('quick-form').addEventListener('submit',()=>animBtn(document.getElementById('quick-btn'),'<i class="fas fa-file-excel"></i> Excel yuklab olish (.xlsx)'));
+document.getElementById('adv-form').addEventListener('submit',function(){if(sel.size===0){alert("Kamida bitta varaq tanlang!");return false;}animBtn(document.getElementById('adv-btn'),'<i class="fas fa-file-excel"></i> Sozlangan Excel yuklash');});
+</script>{% endblock %}

@@ -1,0 +1,251 @@
+{% extends 'base.html' %}{% block title %}O'yin Topish{% endblock %}
+{% block extra_css %}<style>
+.lg{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+@media(max-width:768px){.lg{grid-template-columns:1fr;}}
+.lhdr{text-align:center;margin-bottom:32px;}
+.lhdr h1{font-family:'Playfair Display',serif;font-size:2.1rem;font-weight:900;}
+.topts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+@media(max-width:480px){.topts{grid-template-columns:repeat(2,1fr);}}
+.topt{background:var(--bg2);border:2px solid var(--border);border-radius:13px;padding:16px 8px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.topt:hover{border-color:var(--accent);transform:translateY(-2px);}
+.topt.sel{border-color:var(--accent);background:var(--aglow);}
+.topt .ic{font-size:1.6rem;margin-bottom:6px;}
+.topt .lb{font-weight:700;font-size:.85rem;}
+.topt .sb{font-size:.68rem;color:var(--muted);margin-top:2px;}
+.topt .pop{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;font-size:.6rem;padding:2px 8px;border-radius:20px;font-weight:700;white-space:nowrap;}
+.qbox{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;text-align:center;display:none;margin-top:16px;}
+.qbox.show{display:block;}
+.spin{width:52px;height:52px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 16px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.qt{font-family:'Playfair Display',serif;font-size:1.9rem;color:var(--accent);}
+.mstat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.ms{background:var(--bg2);border-radius:9px;padding:11px;text-align:center;}
+.ms .v{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:900;color:var(--accent);}
+.ms .l{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.online-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.online-item:last-child{border-bottom:none;}
+.odot{display:inline-block;width:8px;height:8px;background:var(--success);border-radius:50%;animation:pulse 2s infinite;margin-right:4px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>{% endblock %}
+
+{% block content %}
+<div class="lhdr">
+  <h1>♟ O'yin Topish</h1>
+  <p style="color:var(--muted);font-size:.82rem;margin-top:7px;">Reytingingiz: <strong style="color:var(--accent)">{{ request.user.profile.rating }}</strong></p>
+</div>
+
+<div class="lg">
+  <!-- Chap: matchmaking -->
+  <div>
+    <div class="card">
+      <h3 style="font-family:'Playfair Display',serif;font-size:1.05rem;margin-bottom:16px;"><i class="fas fa-clock" style="color:var(--accent)"></i> Vaqt nazorati</h3>
+      <div class="topts">
+        <div class="topt" onclick="selT(this,1,0)"><div class="ic">⚡</div><div class="lb">1+0</div><div class="sb">Bullet</div></div>
+        <div class="topt" onclick="selT(this,2,1)"><div class="ic">⚡</div><div class="lb">2+1</div><div class="sb">Bullet</div></div>
+        <div class="topt sel" onclick="selT(this,3,2)"><div class="pop">🔥 Mashhur</div><div class="ic">🔥</div><div class="lb">3+2</div><div class="sb">Blitz</div></div>
+        <div class="topt" onclick="selT(this,5,0)"><div class="ic">🔥</div><div class="lb">5+0</div><div class="sb">Blitz</div></div>
+        <div class="topt" onclick="selT(this,10,0)"><div class="ic">🐎</div><div class="lb">10+0</div><div class="sb">Rapid</div></div>
+        <div class="topt" onclick="selT(this,15,10)"><div class="ic">🐎</div><div class="lb">15+10</div><div class="sb">Rapid</div></div>
+      </div>
+      <button id="pbtn" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;" onclick="startQ()">
+        <i class="fas fa-chess-knight"></i> Raqib Topish
+      </button>
+    </div>
+
+    <div class="qbox" id="qbox">
+      <div class="spin"></div>
+      <div class="qt" id="qtimer">0:00</div>
+      <div style="font-weight:700;margin-top:8px;">Raqib qidirilmoqda...</div>
+      <div style="color:var(--muted);font-size:.78rem;margin-top:6px;">Reyting <strong style="color:var(--accent)">{{ request.user.profile.rating }}</strong> ±200</div>
+      <button class="btn btn-outline" style="margin-top:16px;" onclick="cancelQ()">
+        <i class="fas fa-times"></i> Bekor qilish
+      </button>
+    </div>
+  </div>
+
+  <!-- O'ng: stats + online -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:.98rem;margin-bottom:13px;">
+        <i class="fas fa-user" style="color:var(--accent)"></i> Mening holatim
+      </h3>
+      <div class="mstat">
+        <div class="ms"><div class="v">{{ request.user.profile.rating }}</div><div class="l">Reyting</div></div>
+        <div class="ms"><div class="v">#{{ request.user.profile.rank }}</div><div class="l">O'rin</div></div>
+        <div class="ms"><div class="v">{{ request.user.profile.games_played }}</div><div class="l">O'yinlar</div></div>
+      </div>
+      <a href="{% url 'profile' request.user.username %}" class="btn btn-outline" style="width:100%;justify-content:center;">
+        Profilga o'tish
+      </a>
+    </div>
+
+    {% if active_games %}
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:.98rem;margin-bottom:13px;color:var(--success);">
+        <span class="odot"></span> Aktiv o'yinlarim
+      </h3>
+      {% for g in active_games %}
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg2);border-radius:9px;margin-bottom:7px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="avatar" style="width:28px;height:28px;font-size:.7rem;">{% if g.opponent.profile.avatar %}<img src="{{ g.opponent.profile.avatar.url }}" alt="">{% else %}{{ g.opponent.username|first|upper }}{% endif %}</div>
+          <div>
+            <div style="font-weight:600;font-size:.82rem;">vs {{ g.opponent.username }}</div>
+            <div style="font-size:.68rem;color:var(--muted);">{{ g.time_info }}</div>
+          </div>
+        </div>
+        <a href="{% url 'chess_game' g.id %}" class="btn btn-primary btn-sm">Davom</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:.98rem;">
+          <i class="fas fa-users" style="color:var(--accent)"></i> Online o'yinchilar
+        </h3>
+        <span style="background:rgba(82,192,120,.12);border:1px solid rgba(82,192,120,.3);color:var(--success);padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700;">
+          <span class="odot"></span><span id="online-count">{{ online_players|length }}</span>
+        </span>
+      </div>
+      <div id="online-players-list">
+      {% for p in online_players %}
+      <div class="online-item">
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div style="position:relative;">
+            <div class="avatar" style="width:30px;height:30px;font-size:.72rem;">{% if p.user.profile.avatar %}<img src="{{ p.user.profile.avatar.url }}" alt="">{% else %}{{ p.user.username|first|upper }}{% endif %}</div>
+            <div class="odot" style="position:absolute;bottom:0;right:0;border:2px solid var(--card);width:9px;height:9px;animation:none;margin:0;background:var(--success);border-radius:50%;"></div>
+          </div>
+          <div>
+            <a href="{% url 'profile' p.user.username %}" style="color:var(--text);text-decoration:none;font-weight:600;font-size:.82rem;">{{ p.user.username }}</a>
+            <div style="font-size:.7rem;color:var(--accent);">{{ p.rating }}</div>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="openChallengeModal('{{ p.user.username }}')">
+          <i class="fas fa-chess"></i> Chaqirish
+        </button>
+      </div>
+      {% empty %}
+      <div id="online-empty" style="text-align:center;padding:24px;color:var(--muted);font-size:.82rem;">
+        <i class="fas fa-user-slash" style="font-size:2rem;margin-bottom:8px;display:block;opacity:.3;"></i>
+        Hozir hech kim online emas
+      </div>
+      {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script>
+let sm = 3, si = 2, searching = false, qiv, qsec = 0;
+
+// ── Online o'yinchilar ro'yxatini har 3 soniyada yangilash ──────────────
+function buildPlayerHTML(p) {
+  const avatarInner = p.avatar_url
+    ? `<img src="${p.avatar_url}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+    : `<span>${p.username[0].toUpperCase()}</span>`;
+  return `<div class="online-item">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="position:relative;">
+        <div class="avatar" style="width:30px;height:30px;font-size:.72rem;">${avatarInner}</div>
+        <div style="position:absolute;bottom:0;right:0;border:2px solid var(--card);width:9px;height:9px;background:var(--success);border-radius:50%;"></div>
+      </div>
+      <div>
+        <a href="${p.profile_url}" style="color:var(--text);text-decoration:none;font-weight:600;font-size:.82rem;">${p.username}</a>
+        <div style="font-size:.7rem;color:var(--accent);">${p.rating}</div>
+      </div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="openChallengeModal('${p.username}')">
+      <i class="fas fa-chess"></i> Chaqirish
+    </button>
+  </div>`;
+}
+
+function refreshOnlinePlayers() {
+  fetch('/play/online-players/')
+    .then(r => r.json())
+    .then(d => {
+      const list = document.getElementById('online-players-list');
+      const countEl = document.getElementById('online-count');
+      if (!list) return;
+      if (d.players.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:.82rem;"><i class="fas fa-user-slash" style="font-size:2rem;margin-bottom:8px;display:block;opacity:.3;"></i>Hozir hech kim online emas</div>';
+      } else {
+        list.innerHTML = d.players.map(buildPlayerHTML).join('');
+      }
+      if (countEl) countEl.textContent = d.players.length;
+    })
+    .catch(() => {});
+}
+setInterval(refreshOnlinePlayers, 3000);
+
+// Matchmaking WebSocket — faqat o'yin topilganda
+// (chaqiruv uchun base.html dagi global wsQ ishlatiladi)
+const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+const wsMatch = new WebSocket(`${proto}://${location.host}/ws/queue/`);
+wsMatch.onmessage = e => {
+  const d = JSON.parse(e.data);
+  // admin_start holatini base.html dagi wsGQ ushlaydi — bu yerda ignore
+  if (d.type === 'game_found' && !d.admin_start && searching) {
+    clearInterval(qiv);
+    window.location.href = `/chess/game/${d.game_id}/`;
+  }
+};
+
+function selT(el, m, i) {
+  document.querySelectorAll('.topt').forEach(e => e.classList.remove('sel'));
+  el.classList.add('sel'); sm = m; si = i;
+}
+
+function startQ() {
+  if (searching) return;
+  searching = true;
+  document.getElementById('pbtn').disabled = true;
+  document.getElementById('qbox').classList.add('show');
+  qsec = 0;
+  qiv = setInterval(() => {
+    qsec++;
+    const m = Math.floor(qsec / 60), s = qsec % 60;
+    document.getElementById('qtimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  }, 1000);
+  fetch('/play/queue/join/', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken': gc('csrftoken')},
+    body: JSON.stringify({minutes: sm, increment: si})
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.game_id) window.location.href = `/chess/game/${d.game_id}/`;
+    else pollQ();
+  });
+}
+
+function pollQ() {
+  const p = setInterval(() => {
+    fetch('/play/queue/status/')
+    .then(r => r.json())
+    .then(d => {
+      if (d.game_id) {
+        clearInterval(p); clearInterval(qiv);
+        window.location.href = `/chess/game/${d.game_id}/`;
+      } else if (!d.in_queue) {
+        clearInterval(p); cancelQ();
+      }
+    });
+  }, 2000);
+}
+
+function cancelQ() {
+  searching = false;
+  clearInterval(qiv);
+  document.getElementById('qbox').classList.remove('show');
+  document.getElementById('pbtn').disabled = false;
+  fetch('/play/queue/leave/', {method:'POST', headers:{'X-CSRFToken': gc('csrftoken')}});
+}
+
+function gc(n) {
+  const m = document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)');
+  return m ? m[2] : null;
+}
+</script>{% endblock %}

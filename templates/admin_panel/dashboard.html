@@ -1,0 +1,104 @@
+{% extends 'base.html' %}{% block title %}Admin Dashboard{% endblock %}
+{% block extra_css %}<style>
+.al{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:start;}
+.an{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:80px;}
+.anh{padding:18px;background:linear-gradient(135deg,var(--accent),#e8c05a);color:#000;}
+.anh h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:900;}
+.an a{display:flex;align-items:center;gap:9px;padding:11px 18px;color:var(--text2);text-decoration:none;font-size:.8rem;transition:all .15s;border-left:3px solid transparent;}
+.an a:hover,.an a.ac{color:var(--accent);background:var(--aglow);border-left-color:var(--accent);}
+.ns{padding:7px 18px 3px;font-size:.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:7px;}
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px;}
+.si{font-size:1.4rem;margin-bottom:10px;}
+.sv{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;}
+.sl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+.schg{font-size:.73rem;margin-top:5px;}
+.schg.up{color:var(--success);}.schg.dn{color:var(--danger);}
+.br{padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700;}
+.ba{background:var(--aglow);color:var(--accent);border:1px solid var(--accent);}
+.bsu{background:rgba(224,82,82,.12);color:var(--danger);border:1px solid var(--danger);}
+.bu{background:rgba(136,136,170,.12);color:var(--muted);}
+
+/* Excel download button special style */
+.xl-btn{background:linear-gradient(135deg,#1D6F42,#2e9c5f);color:#fff;border:none;display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .25s;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;}
+.xl-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(29,111,66,.35);}
+.csv-btn{background:transparent;color:var(--success);border:1px solid var(--success);display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .25s;letter-spacing:.5px;text-transform:uppercase;text-decoration:none;}
+.csv-btn:hover{background:rgba(82,192,120,.1);}
+
+@media(max-width:768px){.al{grid-template-columns:1fr;}.sg{grid-template-columns:repeat(2,1fr);}}
+</style>{% endblock %}
+{% block content %}
+<div class="al">
+  <div class="an">
+    <div class="anh"><h3><i class="fas fa-shield-halved"></i> Admin Panel</h3><div style="font-size:.72rem;opacity:.7;margin-top:2px;">{{ request.user.username }}</div></div>
+    <div class="ns">Boshqaruv</div>
+    <a href="{% url 'admin_dashboard' %}" class="ac"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="{% url 'admin_players' %}"><i class="fas fa-users"></i> O'yinchilar</a>
+    <a href="{% url 'admin_games' %}"><i class="fas fa-chess-board"></i> O'yinlar</a>
+    <a href="{% url 'admin_create_game' %}"><i class="fas fa-plus-circle"></i> O'yin yaratish</a>
+    <a href="{% url 'admin_live_games' %}"><i class="fas fa-circle" style="color:var(--danger);font-size:.5rem;vertical-align:middle;"></i> Jonli o'yinlar</a>
+    <div class="ns">Export</div>
+    <a href="{% url 'admin_ratings' %}"><i class="fas fa-file-excel" style="color:#1D6F42;"></i> Excel / CSV</a>
+    <div class="ns">Parol</div>
+    <a href="{% url 'admin_ratings' %}"><i class="fas fa-key"></i> Parol tiklash</a>
+    {% if request.user.is_superuser %}
+    <div class="ns">Superuser</div>
+    <a href="{% url 'superuser_users' %}"><i class="fas fa-user-shield"></i> Foydalanuvchilar</a>
+    <a href="{% url 'superuser_add_user' %}"><i class="fas fa-user-plus"></i> Qo'shish</a>
+    <a href="{% url 'superuser_settings' %}"><i class="fas fa-cog"></i> Sozlamalar</a>
+    <a href="/django-admin/" target="_blank"><i class="fas fa-external-link-alt"></i> Django Admin</a>
+    {% endif %}
+  </div>
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h1 style="font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;">Dashboard</h1>
+      <div style="display:flex;gap:9px;">
+        <form method="post" action="{% url 'admin_export_excel' %}">{% csrf_token %}<input type="hidden" name="sheets" value="main,top10,stats,games{% if request.user.is_superuser %},admin{% endif %}"><input type="hidden" name="limit" value="all"><input type="hidden" name="status_filter" value="all"><input type="hidden" name="rating_filter" value="all"><button type="submit" class="xl-btn"><i class="fas fa-file-excel"></i> Excel yuklab olish</button></form>
+        <a href="{% url 'admin_export_csv' %}" class="csv-btn"><i class="fas fa-file-csv"></i> CSV</a>
+      </div>
+    </div>
+    <div class="sg">
+      <div class="sc"><div class="si">👥</div><div class="sv">{{ stats.total_users }}</div><div class="sl">Foydalanuvchilar</div><div class="schg up">+{{ stats.new_users_today }} bugun</div></div>
+      <div class="sc"><div class="si">♟</div><div class="sv">{{ stats.total_games }}</div><div class="sl">Jami o'yinlar</div><div class="schg up">+{{ stats.games_today }} bugun</div></div>
+      <div class="sc"><div class="si">⚡</div><div class="sv" style="color:var(--success)">{{ stats.active_games }}</div><div class="sl">Aktiv o'yinlar</div><div class="schg">Hozir jonli</div></div>
+      <div class="sc"><div class="si">🌐</div><div class="sv">{{ stats.online_users }}</div><div class="sl">Online</div><div class="schg">15 daq ichida</div></div>
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:1rem;"><i class="fas fa-chess-board" style="color:var(--accent)"></i> So'nggi o'yinlar</h3>
+        <a href="{% url 'admin_games' %}" class="btn btn-outline btn-sm">Barchasi</a>
+      </div>
+      <table><thead><tr><th>#</th><th>Oq</th><th>Qora</th><th>Natija</th><th>Holat</th><th>Sana</th><th></th></tr></thead><tbody>
+      {% for g in recent_games %}
+      <tr><td style="color:var(--muted)">{{ g.id }}</td>
+      <td><a href="{% url 'profile' g.white_player.username %}" style="color:var(--text);text-decoration:none;">{{ g.white_player.username }}</a> <span style="color:var(--muted);font-size:.72rem;">({{ g.white_player.profile.rating }})</span></td>
+      <td><a href="{% url 'profile' g.black_player.username %}" style="color:var(--text);text-decoration:none;">{{ g.black_player.username }}</a> <span style="color:var(--muted);font-size:.72rem;">({{ g.black_player.profile.rating }})</span></td>
+      <td>{% if g.status == 'white_wins' %}<span style="color:var(--success)">Oq g'alaba</span>{% elif g.status == 'black_wins' %}<span style="color:var(--accent)">Qora g'alaba</span>{% elif g.status == 'draw' %}<span style="color:var(--muted)">Durang</span>{% else %}<span style="color:var(--info)">Davom</span>{% endif %}</td>
+      <td>{% if g.status == 'active' %}<span style="color:var(--success);font-size:.78rem;">● Aktiv</span>{% else %}<span style="color:var(--muted);font-size:.78rem;">Tugagan</span>{% endif %}</td>
+      <td style="color:var(--muted);font-size:.78rem;">{{ g.created_at|date:"d.m.y H:i" }}</td>
+      <td><a href="{% url 'admin_watch_game' g.id %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a></td></tr>
+      {% endfor %}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="font-family:'Playfair Display',serif;font-size:1rem;"><i class="fas fa-trophy" style="color:var(--accent)"></i> Top o'yinchilar reytingi</h3>
+        <div style="display:flex;gap:8px;">
+          <form method="post" action="{% url 'admin_export_excel' %}">{% csrf_token %}<input type="hidden" name="sheets" value="main,top10"><input type="hidden" name="limit" value="all"><input type="hidden" name="status_filter" value="all"><input type="hidden" name="rating_filter" value="all"><button type="submit" class="xl-btn" style="padding:7px 14px;font-size:.72rem;"><i class="fas fa-file-excel"></i> Excel</button></form>
+          <a href="{% url 'admin_players' %}" class="btn btn-outline btn-sm">Barchasi</a>
+        </div>
+      </div>
+      <table><thead><tr><th>#</th><th>Foydalanuvchi</th><th>Reyting</th><th>O'yinlar</th><th>Rol</th><th>Holat</th><th>Amallar</th></tr></thead><tbody>
+      {% for u in top_players %}
+      <tr><td style="color:var(--muted)">{{ forloop.counter }}</td>
+      <td><div style="display:flex;align-items:center;gap:9px;"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;">{{ u.username|first|upper }}</div><div><div style="font-weight:600;font-size:.83rem;">{{ u.username }}</div><div style="font-size:.7rem;color:var(--muted);">{{ u.email }}</div></div></div></td>
+      <td><span style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--accent);">{{ u.profile.rating }}</span></td>
+      <td style="color:var(--muted)">{{ u.profile.games_played }}</td>
+      <td>{% if u.is_superuser %}<span class="br bsu">Superuser</span>{% elif u.is_staff %}<span class="br ba">Admin</span>{% else %}<span class="br bu">O'yinchi</span>{% endif %}</td>
+      <td>{% if u.is_active %}<span style="color:var(--success);font-size:.78rem;">● Aktiv</span>{% else %}<span style="color:var(--danger);font-size:.78rem;">● Blok</span>{% endif %}</td>
+      <td><div style="display:flex;gap:4px;"><a href="{% url 'admin_edit_player' u.id %}" class="btn btn-outline btn-sm"><i class="fas fa-pen"></i></a><a href="{% url 'admin_reset_player_password' u.id %}" class="btn btn-outline btn-sm"><i class="fas fa-key"></i></a>{% if not u.is_superuser %}<form method="post" action="{% url 'admin_toggle_active' u.id %}">{% csrf_token %}<button type="submit" class="btn {% if u.is_active %}btn-danger{% else %}btn-success{% endif %} btn-sm"><i class="fas {% if u.is_active %}fa-ban{% else %}fa-check{% endif %}"></i></button></form>{% endif %}</div></td>
+      </tr>{% endfor %}
+      </tbody></table>
+    </div>
+  </div>
+</div>{% endblock %}

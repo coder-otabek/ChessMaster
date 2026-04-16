@@ -1,0 +1,177 @@
+{% extends 'base.html' %}{% block title %}O'yin Yaratish{% endblock %}
+{% block extra_css %}<style>
+.al{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:start;}
+@media(max-width:768px){.al{grid-template-columns:1fr;}}
+.an{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;position:sticky;top:76px;}
+.anh{padding:16px 18px;background:linear-gradient(135deg,var(--accent),#e8c05a);color:#000;}
+.anh h3{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:900;}
+.an a{display:flex;align-items:center;gap:9px;padding:10px 17px;color:var(--text2);text-decoration:none;font-size:.78rem;transition:all .15s;border-left:3px solid transparent;}
+.an a:hover,.an a.ac{color:var(--accent);background:var(--aglow);border-left-color:var(--accent);}
+.ns{padding:6px 17px 2px;font-size:.6rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:5px;}
+
+/* player picker */
+.pp-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start;margin-bottom:24px;}
+@media(max-width:600px){.pp-grid{grid-template-columns:1fr;}.vs-badge{display:none;}}
+.vs-badge{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#000;font-weight:900;font-size:1rem;margin-top:28px;}
+.player-card{background:var(--bg2);border:2px solid var(--border);border-radius:13px;padding:16px;transition:border-color .2s;}
+.player-card.selected{border-color:var(--accent);}
+.player-search{width:100%;padding:9px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;margin-bottom:10px;}
+.player-search:focus{border-color:var(--accent);}
+.player-select{width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;height:200px;}
+.player-select:focus{border-color:var(--accent);}
+.selected-info{margin-top:10px;padding:9px 12px;background:var(--aglow);border:1px solid var(--accent);border-radius:8px;font-size:.8rem;display:none;}
+.selected-info.show{display:block;}
+
+.tc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+@media(max-width:480px){.tc-grid{grid-template-columns:repeat(2,1fr);}}
+.tc-opt{background:var(--bg2);border:2px solid var(--border);border-radius:11px;padding:13px 8px;text-align:center;cursor:pointer;transition:all .2s;}
+.tc-opt:hover{border-color:var(--accent);}
+.tc-opt.sel{border-color:var(--accent);background:var(--aglow);}
+.tc-opt .tc-lb{font-weight:700;font-size:.9rem;}
+.tc-opt .tc-sb{font-size:.68rem;color:var(--muted);margin-top:2px;}
+</style>{% endblock %}
+
+{% block content %}
+<div class="al">
+  <!-- Sidebar -->
+  <div class="an">
+    <div class="anh"><h3><i class="fas fa-shield-halved"></i> Admin Panel</h3><div style="font-size:.7rem;opacity:.7;margin-top:1px;">{{ request.user.username }}</div></div>
+    <div class="ns">Boshqaruv</div>
+    <a href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+    <a href="{% url 'admin_players' %}"><i class="fas fa-users"></i> O'yinchilar</a>
+    <a href="{% url 'admin_games' %}"><i class="fas fa-chess-board"></i> O'yinlar</a>
+    <a href="{% url 'admin_create_game' %}" class="ac"><i class="fas fa-plus-circle"></i> O'yin yaratish</a>
+    <a href="{% url 'admin_live_games' %}"><i class="fas fa-circle" style="color:var(--danger);font-size:.5rem;vertical-align:middle;"></i> Jonli o'yinlar</a>
+    {% if request.user.is_superuser %}
+    <div class="ns">Superuser</div>
+    <a href="{% url 'superuser_users' %}"><i class="fas fa-user-shield"></i> Foydalanuvchilar</a>
+    {% endif %}
+  </div>
+
+  <!-- Main content -->
+  <div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+      <a href="{% url 'admin_games' %}" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i></a>
+      <h1 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;">O'yin Yaratish</h1>
+    </div>
+
+    <div class="card">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="white_player" id="white_val">
+        <input type="hidden" name="black_player" id="black_val">
+        <input type="hidden" name="time_control" id="tc_val" value="5+0">
+
+        <!-- Player picker -->
+        <h3 style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:14px;color:var(--accent);"><i class="fas fa-users"></i> O'yinchilarni tanlang</h3>
+        <div class="pp-grid">
+          <!-- White side -->
+          <div class="player-card" id="wcard">
+            <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+              ♙ Oq tomoni
+            </div>
+            <input type="text" class="player-search" placeholder="Qidirish..." oninput="filterPlayers('w',this.value)">
+            <select size="8" class="player-select" id="wselect" onchange="pickPlayer('w',this)">
+              {% for p in players %}
+              <option value="{{ p.id }}" data-uname="{{ p.username }}" data-rating="{{ p.profile.rating }}">{{ p.username }} ({{ p.profile.rating }})</option>
+              {% endfor %}
+            </select>
+            <div class="selected-info" id="winfo"></div>
+          </div>
+
+          <div class="vs-badge">VS</div>
+
+          <!-- Black side -->
+          <div class="player-card" id="bcard">
+            <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+              ♟ Qora tomoni
+            </div>
+            <input type="text" class="player-search" placeholder="Qidirish..." oninput="filterPlayers('b',this.value)">
+            <select size="8" class="player-select" id="bselect" onchange="pickPlayer('b',this)">
+              {% for p in players %}
+              <option value="{{ p.id }}" data-uname="{{ p.username }}" data-rating="{{ p.profile.rating }}">{{ p.username }} ({{ p.profile.rating }})</option>
+              {% endfor %}
+            </select>
+            <div class="selected-info" id="binfo"></div>
+          </div>
+        </div>
+
+        <!-- Time control -->
+        <h3 style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:13px;color:var(--accent);"><i class="fas fa-clock"></i> Vaqt nazorati</h3>
+        <div class="tc-grid">
+          <div class="tc-opt" onclick="selTC(this,'1+0')"><div class="tc-lb">⚡ 1+0</div><div class="tc-sb">Bullet</div></div>
+          <div class="tc-opt" onclick="selTC(this,'2+1')"><div class="tc-lb">⚡ 2+1</div><div class="tc-sb">Bullet</div></div>
+          <div class="tc-opt" onclick="selTC(this,'3+2')"><div class="tc-lb">🔥 3+2</div><div class="tc-sb">Blitz</div></div>
+          <div class="tc-opt sel" onclick="selTC(this,'5+0')"><div class="tc-lb">🔥 5+0</div><div class="tc-sb">Blitz</div></div>
+          <div class="tc-opt" onclick="selTC(this,'10+0')"><div class="tc-lb">🐎 10+0</div><div class="tc-sb">Rapid</div></div>
+          <div class="tc-opt" onclick="selTC(this,'15+10')"><div class="tc-lb">🐎 15+10</div><div class="tc-sb">Rapid</div></div>
+        </div>
+
+        <!-- Preview & submit -->
+        <div id="preview" style="display:none;background:var(--bg2);border:1px solid var(--accent);border-radius:11px;padding:16px;margin-bottom:20px;">
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">O'yin preview</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:900;" id="preview_text">—</div>
+          <div style="font-size:.78rem;color:var(--accent);margin-top:4px;" id="preview_tc">5+0 Blitz</div>
+        </div>
+
+        <button type="submit" id="sbtn" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:.9rem;" disabled>
+          <i class="fas fa-play-circle"></i> O'yinni Boshlash
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script>
+const allOpts = {
+  w: Array.from(document.getElementById('wselect').options).map(o=>({v:o.value,t:o.text,u:o.dataset.uname,r:o.dataset.rating})),
+  b: Array.from(document.getElementById('bselect').options).map(o=>({v:o.value,t:o.text,u:o.dataset.uname,r:o.dataset.rating})),
+};
+const state = {w:null, b:null, tc:'5+0'};
+
+function filterPlayers(side, q) {
+  const sel = document.getElementById(side+'select');
+  sel.innerHTML = '';
+  const filtered = allOpts[side].filter(o => o.t.toLowerCase().includes(q.toLowerCase()));
+  filtered.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.v; opt.text = o.t;
+    opt.dataset.uname = o.u; opt.dataset.rating = o.r;
+    sel.appendChild(opt);
+  });
+}
+
+function pickPlayer(side, sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt) return;
+  state[side] = {id: opt.value, uname: opt.dataset.uname, rating: opt.dataset.rating};
+  const hiddenId = side === 'w' ? 'white_val' : 'black_val';
+  document.getElementById(hiddenId).value = opt.value;
+  const info = document.getElementById(side+'info');
+  info.innerHTML = `<strong>${opt.dataset.uname}</strong> — Reyting: <span style="color:var(--accent)">${opt.dataset.rating}</span>`;
+  info.classList.add('show');
+  document.getElementById(side+'card').classList.add('selected');
+  updatePreview();
+}
+
+function selTC(el, tc) {
+  document.querySelectorAll('.tc-opt').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  state.tc = tc;
+  document.getElementById('tc_val').value = tc;
+  updatePreview();
+}
+
+function updatePreview() {
+  const ok = state.w && state.b && state.w.id !== state.b.id;
+  document.getElementById('sbtn').disabled = !ok;
+  if (ok) {
+    document.getElementById('preview').style.display = 'block';
+    document.getElementById('preview_text').textContent = `${state.w.uname} ♙ vs ♟ ${state.b.uname}`;
+    document.getElementById('preview_tc').textContent = `${state.tc} · Vaqt nazorati`;
+  } else {
+    document.getElementById('preview').style.display = 'none';
+  }
+}
+</script>{% endblock %}

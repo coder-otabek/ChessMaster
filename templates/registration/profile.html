@@ -1,0 +1,84 @@
+{% extends 'base.html' %}{% block title %}{{ profile_user.username }} — Profil{% endblock %}
+{% block extra_css %}<style>
+.ph{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:36px;display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center;margin-bottom:24px;position:relative;overflow:hidden;}
+.ph::before{content:'♛';position:absolute;right:-20px;bottom:-20px;font-size:160px;opacity:.03;pointer-events:none;}
+.pname{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:900;}
+.pmeta{color:var(--muted);font-size:.78rem;margin-top:6px;display:flex;gap:14px;flex-wrap:wrap;}
+.pmeta span{display:flex;align-items:center;gap:5px;}
+.badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+.badge{padding:3px 11px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.5px;border:1px solid;}
+.bg{border-color:var(--accent);background:var(--aglow);color:var(--accent);}
+.bs{border-color:#c0c0c0;background:rgba(192,192,192,.1);color:#c0c0c0;}
+.bb{border-color:var(--info);background:rgba(82,168,224,.1);color:var(--info);}
+.sg{display:grid;grid-template-columns:1fr 2fr;gap:20px;align-items:start;}
+.sbox{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:16px;text-align:center;}
+.sv{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;color:var(--accent);}
+.sl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+.rw{color:var(--success);font-weight:700;}.rl{color:var(--danger);font-weight:700;}.rd{color:var(--muted);font-weight:700;}
+@media(max-width:768px){.ph{grid-template-columns:1fr;text-align:center;}.sg{grid-template-columns:1fr;}}
+</style>{% endblock %}
+{% block content %}
+<div class="ph">
+  <div class="avatar xl">{% if profile_user.profile.avatar %}<img src="{{ profile_user.profile.avatar.url }}" alt="">{% else %}{{ profile_user.username|first|upper }}{% endif %}</div>
+  <div>
+    <div class="pname">{{ profile_user.get_full_name|default:profile_user.username }}</div>
+    <div class="pmeta">
+      <span><i class="fas fa-user"></i> @{{ profile_user.username }}</span>
+      <span><i class="fas fa-calendar"></i> {{ profile_user.date_joined|date:"d.m.Y" }}</span>
+      {% if profile_user.profile.country %}<span><i class="fas fa-globe"></i> {{ profile_user.profile.country }}</span>{% endif %}
+      <span style="color:var(--accent);font-weight:700;"><i class="fas fa-star"></i> {{ profile_user.profile.title }}</span>
+    </div>
+    {% if profile_user.profile.bio %}<div style="color:var(--text2);font-size:.82rem;margin-top:8px;">{{ profile_user.profile.bio }}</div>{% endif %}
+    <div class="badges">
+      {% if profile_user.profile.rating >= 2400 %}<span class="badge bg">♛ Grandmaster</span>{% endif %}
+      {% if profile_user.profile.rating >= 2000 %}<span class="badge bs">♝ Expert+</span>{% endif %}
+      {% if profile_user.profile.games_played >= 100 %}<span class="badge bb">⚡ Veteran</span>{% endif %}
+    </div>
+  </div>
+  <div>
+    {% if request.user != profile_user and request.user.is_authenticated %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn btn-primary" onclick="openChallengeModal('{{ profile_user.username }}')"><i class="fas fa-chess-knight"></i> Musobaqa</button>
+      <a href="{% url 'chat_with' profile_user.username %}" class="btn btn-outline"><i class="fas fa-comment"></i> Chat</a>
+    </div>
+    {% elif request.user == profile_user %}
+    <a href="{% url 'profile_edit' %}" class="btn btn-outline"><i class="fas fa-pen"></i> Tahrirlash</a>
+    {% endif %}
+  </div>
+</div>
+<div class="sg">
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:16px;color:var(--accent);"><i class="fas fa-chart-bar"></i> Statistika</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="sbox"><div class="sv">{{ profile_user.profile.rating }}</div><div class="sl">Reyting</div></div>
+        <div class="sbox"><div class="sv" style="font-size:1.1rem;"><span style="color:var(--success)">{{ profile_user.profile.wins }}W</span> <span style="color:var(--danger)">{{ profile_user.profile.losses }}L</span> <span style="color:var(--muted)">{{ profile_user.profile.draws }}D</span></div><div class="sl">G'alaba / Mag' / Durang</div></div>
+        <div class="sbox"><div class="sv" style="font-size:1.2rem;">{{ profile_user.profile.games_played }}</div><div class="sl">Jami o'yinlar</div></div>
+        <div class="sbox"><div class="sv" style="font-size:1.2rem;">{% if profile_user.profile.games_played %}{{ profile_user.profile.win_rate }}%{% else %}—{% endif %}</div><div class="sl">G'alaba %</div></div>
+        <div class="sbox"><div class="sv" style="font-size:1.6rem;color:var(--text2);">#{{ profile_user.profile.rank }}</div><div class="sl">Umumiy o'rin</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:18px;color:var(--accent);"><i class="fas fa-history"></i> So'nggi o'yinlar</h3>
+    {% if recent_games %}
+    <table>
+      <thead><tr><th>Raqib</th><th>Natija</th><th>Reyting</th><th>Sana</th><th></th></tr></thead>
+      <tbody>
+      {% for g in recent_games %}
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:9px;"><div class="avatar" style="width:30px;height:30px;font-size:.72rem;">{% if g.opponent.profile.avatar %}<img src="{{ g.opponent.profile.avatar.url }}" alt="">{% else %}{{ g.opponent.username|first|upper }}{% endif %}</div><a href="{% url 'profile' g.opponent.username %}" style="color:var(--text);text-decoration:none;">{{ g.opponent.username }}</a></div></td>
+        <td>{% if g.result == 'win' %}<span class="rw">G'ALABA</span>{% elif g.result == 'loss' %}<span class="rl">MAG'LUBIYAT</span>{% else %}<span class="rd">DURANG</span>{% endif %}</td>
+        <td>{% if g.rating_change > 0 %}<span style="color:var(--success)">+{{ g.rating_change }}</span>{% else %}<span style="color:var(--danger)">{{ g.rating_change }}</span>{% endif %}</td>
+        <td style="color:var(--muted);font-size:.78rem;">{{ g.created_at|date:"d.m.y" }}</td>
+        <td><a href="{% url 'chess_game' g.id %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:3rem;margin-bottom:12px;">♟</div>Hali o'yin yo'q</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

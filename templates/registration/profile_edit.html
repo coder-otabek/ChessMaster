@@ -1,0 +1,72 @@
+{% extends 'base.html' %}{% block title %}Profilni tahrirlash{% endblock %}
+{% block extra_css %}<style>
+.eg{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start;}
+.avwrap{text-align:center;cursor:pointer;position:relative;display:inline-block;}
+.avover{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;font-size:1.4rem;color:#fff;}
+.avwrap:hover .avover{opacity:1;}
+.st{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;margin-bottom:14px;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:10px;}
+.gr{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:768px){.eg{grid-template-columns:1fr;}}
+</style>{% endblock %}
+{% block content %}
+<div style="max-width:860px;margin:0 auto;">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+    <a href="{% url 'profile' request.user.username %}" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i></a>
+    <h1 style="font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;">Profilni tahrirlash</h1>
+  </div>
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    <div class="eg">
+      <div>
+        <div class="card" style="text-align:center;margin-bottom:16px;">
+          <div class="st">Rasm</div>
+          <div class="avwrap" onclick="document.getElementById('avf').click()">
+            {% if request.user.profile.avatar %}<img src="{{ request.user.profile.avatar.url }}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);" id="avimg">
+            {% else %}<div class="avatar xl" id="avimg">{{ request.user.username|first|upper }}</div>{% endif %}
+            <div class="avover"><i class="fas fa-camera"></i></div>
+          </div>
+          <input type="file" id="avf" name="avatar" accept="image/*" style="display:none" onchange="prevAv(this)">
+          <div style="font-size:.72rem;color:var(--muted);margin-top:10px;">Bosib rasm yuklang</div>
+        </div>
+        <div class="card">
+          <div class="st">Xavfsizlik</div>
+          <a href="{% url 'password_change' %}" class="btn btn-outline" style="width:100%;justify-content:center;"><i class="fas fa-lock"></i> Parol o'zgartirish</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="st">Shaxsiy ma'lumotlar</div>
+        <div class="gr">
+          <div class="form-group"><label>Ism</label><input type="text" name="first_name" value="{{ request.user.first_name }}">{% if form.first_name.errors %}<ul class="errorlist">{% for e in form.first_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+          <div class="form-group"><label>Familiya</label><input type="text" name="last_name" value="{{ request.user.last_name }}"></div>
+        </div>
+        <div class="form-group"><label>Foydalanuvchi nomi</label><input type="text" name="username" value="{{ request.user.username }}" required>{% if form.username.errors %}<ul class="errorlist">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+        <div class="form-group"><label>Email</label><input type="email" name="email" value="{{ request.user.email }}">{% if form.email.errors %}<ul class="errorlist">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div>
+        <div class="form-group"><label>Bio</label><textarea name="bio" rows="3" placeholder="O'zingiz haqingizda...">{{ request.user.profile.bio }}</textarea></div>
+        <div class="gr">
+          <div class="form-group"><label>Mamlakat</label><input type="text" name="country" value="{{ request.user.profile.country }}"></div>
+          <div class="form-group"><label>Shahar</label><input type="text" name="city" value="{{ request.user.profile.city }}"></div>
+        </div>
+        <div class="st" style="margin-top:20px;">O'yin sozlamalari</div>
+        <div class="gr">
+          <div class="form-group"><label>Sevimli qo'llanma</label><input type="text" name="favorite_opening" value="{{ request.user.profile.favorite_opening }}" placeholder="Siciliya..."></div>
+          <div class="form-group"><label>O'yin uslubi</label>
+            <select name="play_style">
+              <option value="">--</option>
+              <option value="aggressive" {% if request.user.profile.play_style == 'aggressive' %}selected{% endif %}>Hujumkor</option>
+              <option value="defensive" {% if request.user.profile.play_style == 'defensive' %}selected{% endif %}>Mudofaachi</option>
+              <option value="positional" {% if request.user.profile.play_style == 'positional' %}selected{% endif %}>Pozitsion</option>
+              <option value="tactical" {% if request.user.profile.play_style == 'tactical' %}selected{% endif %}>Taktik</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+          <a href="{% url 'profile' request.user.username %}" class="btn btn-outline">Bekor</a>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Saqlash</button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}<script>
+function prevAv(inp){if(inp.files&&inp.files[0]){const r=new FileReader();r.onload=e=>{const w=inp.closest('.card').querySelector('.avwrap');let img=w.querySelector('img');if(!img){const av=w.querySelector('.avatar');av.outerHTML=`<img src="${e.target.result}" id="avimg" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);">`;}else{img.src=e.target.result;}};r.readAsDataURL(inp.files[0]);}}
+</script>{% endblock %}
