@@ -177,6 +177,64 @@
     .xl-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(29,111,66,.35);}
     .csv-btn{background:transparent;color:var(--success);border:1px solid var(--success);display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .25s;letter-spacing:.4px;text-transform:uppercase;text-decoration:none;}
     .csv-btn:hover{background:rgba(82,192,120,.1);}
+
+    /* Donate button */
+    .donate-btn{
+      display:inline-flex;align-items:center;gap:6px;
+      background:linear-gradient(135deg,#e85d75,#f4845f);
+      color:#fff;border:none;cursor:pointer;
+      padding:6px 13px;border-radius:20px;
+      font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;
+      letter-spacing:.5px;text-transform:uppercase;text-decoration:none;
+      transition:all .25s;box-shadow:0 3px 12px rgba(232,93,117,.3);
+      flex-shrink:0;
+    }
+    .donate-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(232,93,117,.45);color:#fff;}
+    .donate-btn i{font-size:.75rem;}
+
+    /* Donate modal */
+    #donateModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:6000;align-items:center;justify-content:center;}
+    #donateModal.open{display:flex;}
+    .donate-modal-box{
+      background:var(--card);border:1px solid var(--border);border-radius:18px;
+      padding:36px 32px;max-width:420px;width:92%;text-align:center;
+      box-shadow:0 0 80px rgba(232,93,117,.15);
+      animation:donateIn .3s ease;
+    }
+    @keyframes donateIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .donate-heart{font-size:3rem;margin-bottom:8px;animation:heartbeat 1.6s ease-in-out infinite;}
+    @keyframes heartbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+    .donate-title{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;margin-bottom:8px;background:linear-gradient(135deg,#e85d75,#f4845f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .donate-desc{color:var(--muted);font-size:.82rem;line-height:1.6;margin-bottom:24px;}
+    .donate-card{
+      background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+      padding:14px 16px;margin-bottom:12px;cursor:pointer;
+      transition:all .2s;display:flex;align-items:center;gap:12px;
+    }
+    .donate-card:hover{border-color:#e85d75;background:rgba(232,93,117,.06);}
+    .donate-card .dc-icon{font-size:1.5rem;flex-shrink:0;}
+    .donate-card .dc-body{flex:1;min-width:0;}
+    .donate-card .dc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;}
+    .donate-card .dc-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+    .donate-card .dc-value{font-size:.92rem;font-weight:700;color:var(--text);letter-spacing:2px;font-family:'JetBrains Mono',monospace;}
+    .donate-copy-btn{
+      background:transparent;border:1px solid var(--border);color:var(--text2);
+      border-radius:8px;padding:5px 10px;font-size:.68rem;font-family:'JetBrains Mono',monospace;
+      cursor:pointer;transition:all .2s;margin-left:auto;flex-shrink:0;
+    }
+    .donate-copy-btn:hover{border-color:#e85d75;color:#e85d75;}
+    .donate-close{
+      margin-top:18px;background:transparent;border:1px solid var(--border);
+      color:var(--text2);padding:8px 22px;border-radius:9px;cursor:pointer;
+      font-family:'JetBrains Mono',monospace;font-size:.72rem;transition:all .2s;
+    }
+    .donate-close:hover{border-color:var(--text);color:var(--text);}
+    .copied-toast{
+      display:inline-block;background:var(--success);color:#fff;
+      border-radius:6px;padding:2px 9px;font-size:.66rem;margin-left:6px;
+      opacity:0;transition:opacity .2s;pointer-events:none;
+    }
+    .copied-toast.show{opacity:1;}
   </style>
   {% block extra_css %}{% endblock %}
 </head>
@@ -197,6 +255,7 @@
     </div>
 
     <div class="nav-right">
+      <button class="donate-btn" onclick="openDonateModal()"><i class="fas fa-heart"></i> <span class="uname">Donat</span></button>
       <button class="theme-btn" onclick="toggleTheme()"><i class="fas fa-moon" id="ticon"></i></button>
       {% if request.user.is_authenticated %}
         {% if request.user.is_staff %}
@@ -246,6 +305,8 @@
   <a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Kirish</a>
   <a href="{% url 'register' %}"><i class="fas fa-user-plus"></i> Ro'yxatdan o'tish</a>
   {% endif %}
+  <div class="div"></div>
+  <a href="#" onclick="toggleMobNav();openDonateModal();return false;" style="color:#e85d75;"><i class="fas fa-heart"></i> Loyihani qo'llab-quvvatlash</a>
 </div>
 
 <main>
@@ -596,7 +657,47 @@ function _gcmCsrf() {
 }
 </script>
 
-<footer>♛ ChessMaster UZ &copy; 2024 — O'zbek shaxmat platformasi</footer>
+<footer>
+  ♛ ChessMaster UZ &copy; 2024 — O'zbek shaxmat platformasi
+  <br><br>
+  <button class="donate-btn" onclick="openDonateModal()" style="margin:0 auto;"><i class="fas fa-heart"></i> Loyihani qo'llab-quvvatlash</button>
+</footer>
+
+<!-- ══ DONAT MODALI ══ -->
+<div id="donateModal">
+  <div class="donate-modal-box">
+    <div class="donate-heart">❤️</div>
+    <div class="donate-title">Loyihani Qo'llab-Quvvatlang</div>
+    <p class="donate-desc">
+      ChessMaster UZ bepul platforma. Sizning yordamingiz serverlarni ushlab turish va yangi imkoniyatlar qo'shishga yordam beradi!
+    </p>
+
+    <div class="donate-card" onclick="copyText('9860060151985289', 'toast-uzcard')">
+      <div class="dc-icon">💳</div>
+      <div class="dc-body">
+        <div class="dc-top">
+          <span class="dc-label">Uzcard</span>
+          <button class="donate-copy-btn" onclick="event.stopPropagation();copyText('9860060151985289','toast-uzcard')"><i class="fas fa-copy"></i> Nusxa</button>
+        </div>
+        <div class="dc-value">9860 0601 5198 5289 <span class="copied-toast" id="toast-uzcard">✓</span></div>
+      </div>
+    </div>
+
+    <div class="donate-card" onclick="copyText('8600490373498995', 'toast-humo')">
+      <div class="dc-icon">💳</div>
+      <div class="dc-body">
+        <div class="dc-top">
+          <span class="dc-label">Humo</span>
+          <button class="donate-copy-btn" onclick="event.stopPropagation();copyText('8600490373498995','toast-humo')"><i class="fas fa-copy"></i> Nusxa</button>
+        </div>
+        <div class="dc-value">8600 4903 7349 8995 <span class="copied-toast" id="toast-humo">✓</span></div>
+      </div>
+    </div>
+
+    <p style="color:var(--muted);font-size:.75rem;margin-top:8px;">Har qanday miqdor katta yordam! 🙏</p>
+    <button class="donate-close" onclick="closeDonateModal()"><i class="fas fa-times"></i> Yopish</button>
+  </div>
+</div>
 
 <script>
 // ── Admin o'yin boshlash modali ───────────────────────────────────────────
@@ -670,6 +771,40 @@ document.addEventListener('click',function(e){
     nav.classList.remove('open');
   }
 });
+
+// ── DONAT MODALI ──────────────────────────────────────────────────────────
+function openDonateModal(){
+  document.getElementById('donateModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDonateModal(){
+  document.getElementById('donateModal').classList.remove('open');
+  document.body.style.overflow='';
+}
+// Tashqariga bosganda yopiladi
+document.getElementById('donateModal').addEventListener('click',function(e){
+  if(e.target===this) closeDonateModal();
+});
+// Esc klavishasi
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeDonateModal();
+});
+function copyText(text, toastId){
+  navigator.clipboard.writeText(text).then(function(){
+    const t=document.getElementById(toastId);
+    if(!t) return;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+  }).catch(function(){
+    // Fallback
+    const ta=document.createElement('textarea');
+    ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    const t=document.getElementById(toastId);
+    if(t){t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+  });
+}
 </script>
 {% block extra_js %}{% endblock %}
 </body>
