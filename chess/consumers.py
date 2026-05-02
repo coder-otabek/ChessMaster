@@ -58,6 +58,11 @@ class ChessConsumer(AsyncWebsocketConsumer):
             # O'yindan chiqayotgan o'yinchi — yutqizgan hisoblanadi
             await self.end_game('resign')
 
+        elif t == 'timeout':
+            loser = data.get('loser')  # 'white' yoki 'black'
+            if loser in ('white', 'black'):
+                await self.end_game_timeout(loser)
+
     # ── Group handlers ────────────────────────────────────────────────────
 
     async def chess_move(self, event):
@@ -236,6 +241,37 @@ class ChessConsumer(AsyncWebsocketConsumer):
                 else:
                     game.status = 'white_wins'
                     game.calculate_rating_change('white')
+            game.apply_result()
+            from asgiref.sync import async_to_sync
+            from channels.layers import get_channel_layer
+            async_to_sync(get_channel_layer().group_send)(self.room, {
+                'type': 'chess_move',
+                'board': game.board_state, 'turn': game.current_turn,
+                'moves': game.moves, 'from_sq': None, 'to_sq': None,
+                'legal_moves': {}, 'in_check': False, 'check_sq': '',
+                'white_time': game.white_time_remaining,
+                'black_time': game.black_time_remaining,
+                'game_over': True, 'result': game.status,
+                'white_change': game.white_rating_change,
+                'black_change': game.black_rating_change,
+            })
+        except Exception:
+            pass
+
+
+    @database_sync_to_async
+    def end_game_timeout(self, loser):
+        from chess.models import Game
+        try:
+            game = Game.objects.get(pk=self.game_id)
+            if game.status != 'active':
+                return
+            if loser == 'white':
+                game.status = 'black_wins'
+                game.calculate_rating_change('black')
+            else:
+                game.status = 'white_wins'
+                game.calculate_rating_change('white')
             game.apply_result()
             from asgiref.sync import async_to_sync
             from channels.layers import get_channel_layer
